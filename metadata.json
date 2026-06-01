@@ -1,0 +1,11 @@
+{
+  "name": "Logistika",
+  "description": "Consola centralizada multi-vista de optimización y seguimiento para rutas, almacén, compras, tiendas y choferes.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

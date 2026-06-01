@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sandbox development rules allowing read and write access to all clients
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

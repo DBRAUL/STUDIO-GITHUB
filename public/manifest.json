@@ -1,0 +1,18 @@
+{
+  "short_name": "Logistika",
+  "name": "Logistika Central",
+  "description": "Consola centralizada multi-vista de optimización y seguimiento para rutas, almacén, compras, tiendas y choferes.",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#ea580c",
+  "display": "standalone",
+  "orientation": "portrait"
+}

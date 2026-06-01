@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "Pedido": {
+      "title": "Pedido",
+      "description": "Información de un pedido o entrega",
+      "type": "object",
+      "properties": {
+        "ticket": { "type": "string" },
+        "fecha": { "type": "string" },
+        "tienda": { "type": "string" },
+        "cliente": { "type": "string" },
+        "tel": { "type": "string" },
+        "dir": { "type": "string" },
+        "ref": { "type": "string" },
+        "tipo": { "type": "string" },
+        "obs": { "type": "string" },
+        "estatus": { "type": "string", "enum": ["CARGADO", "PENDIENTE", "EN PROCESO / COMPRA", "PARCIAL", "ENTREGA INMEDIATA", "REVISADO", "PROGRAMADO", "EN RUTA", "FINALIZADO"] },
+        "comprasObs": { "type": "string" },
+        "comprasUbic": { "type": "string" },
+        "chofer": { "type": "string" },
+        "dateenv": { "type": "string" },
+        "orden": { "type": "integer" },
+        "obsLogistica": { "type": "string" },
+        "lat": { "type": "string" },
+        "lng": { "type": "string" },
+        "receptor": { "type": "string" },
+        "fotoUrl": { "type": "string" },
+        "dateped": { "type": "string" },
+        "numInt": { "type": "string" }
+      },
+      "required": ["ticket", "tienda", "estatus"]
+    },
+    "Recoleccion": {
+      "title": "Recoleccion",
+      "description": "Información de una recolección de material",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "solicitante": { "type": "string", "enum": ["COMPRAS", "LOGISTICA"] },
+        "proveedor": { "type": "string" },
+        "direccion": { "type": "string" },
+        "referencias": { "type": "string" },
+        "material": { "type": "string" },
+        "fechaDisponible": { "type": "string" },
+        "chofer": { "type": "string" },
+        "fechaReal": { "type": "string" },
+        "estatus": { "type": "string", "enum": ["SOLICITADO", "PENDIENTE", "REVISADO", "PROGRAMADO", "EN RUTA", "RECOLECTADO", "FINALIZADO"] },
+        "fechaAlta": { "type": "string" },
+        "orden": { "type": "integer" },
+        "lat": { "type": "string" },
+        "lng": { "type": "string" }
+      },
+      "required": ["id", "solicitante", "proveedor", "estatus"]
+    },
+    "ChoferConfig": {
+      "title": "Chofer",
+      "description": "Configuración de un chofer/operador móvil",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nombre": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "ultimaUbicacion": { "type": "string" }
+      },
+      "required": ["id", "nombre"]
+    },
+    "ProveedorConfig": {
+      "title": "Proveedor",
+      "description": "Listado de proveedores",
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string" },
+        "direccion": { "type": "string" },
+        "referencia": { "type": "string" }
+      },
+      "required": ["nombre"]
+    },
+    "TiendaConfig": {
+      "title": "Tienda",
+      "description": "Listado de sucursales autorizadas",
+      "type": "object",
+      "properties": {
+        "nombre": { "type": "string" },
+        "direccion": { "type": "string" },
+        "siglas": { "type": "string" }
+      },
+      "required": ["nombre"]
+    },
+    "HistorialEntrega": {
+      "title": "HistorialEntrega",
+      "description": "Historial de entregas archivadas",
+      "type": "object",
+      "properties": {
+        "ticket": { "type": "string" },
+        "fecha": { "type": "string" },
+        "tienda": { "type": "string" },
+        "cliente": { "type": "string" },
+        "estatus": { "type": "string" },
+        "fechaArchivado": { "type": "string" }
+      },
+      "required": ["ticket", "fechaArchivado"]
+    },
+    "HistorialRecoleccion": {
+      "title": "HistorialRecoleccion",
+      "description": "Historial de recolecciones archivadas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "proveedor": { "type": "string" },
+        "estatus": { "type": "string" },
+        "fechaArchivado": { "type": "string" }
+      },
+      "required": ["id", "fechaArchivado"]
+    }
+  },
+  "firestore": {
+    "pedidos": {
+      "schema": { "$ref": "#/entities/Pedido" },
+      "description": "Colección de pedidos y entregas activas"
+    },
+    "recolecciones": {
+      "schema": { "$ref": "#/entities/Recoleccion" },
+      "description": "Colección de solicitudes de recolección activas"
+    },
+    "choferes": {
+      "schema": { "$ref": "#/entities/ChoferConfig" },
+      "description": "Catálogo de choferes autorizados y posiciones GPS"
+    },
+    "proveedores": {
+      "schema": { "$ref": "#/entities/ProveedorConfig" },
+      "description": "Catálogo de proveedores para recolecciones"
+    },
+    "tiendas": {
+      "schema": { "$ref": "#/entities/TiendaConfig" },
+      "description": "Catálogo de tiendas registradas"
+    },
+    "historial_entregas": {
+      "schema": { "$ref": "#/entities/HistorialEntrega" },
+      "description": "Auditoría de pedidos archivados"
+    },
+    "historial_recolecciones": {
+      "schema": { "$ref": "#/entities/HistorialRecoleccion" },
+      "description": "Auditoría de recolecciones archivadas"
+    }
+  }
+}
