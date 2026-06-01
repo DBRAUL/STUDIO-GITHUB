@@ -980,15 +980,53 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const subirFotoDrive = (idPedido: string, base64Data: string): string => {
     const url = `https://drive.google.com/thumbnail?id=simulated_file_${idPedido}_${new Date().getTime()}`;
-    const docRef = doc(db, 'pedidos', idPedido);
-    getDoc(docRef).then(snap => {
+    const cleanId = idPedido.trim();
+    const upperId = idPedido.toUpperCase().trim();
+
+    // 1. Try with exact ID in pedidos
+    const docRefPedido = doc(db, 'pedidos', cleanId);
+    getDoc(docRefPedido).then(snap => {
       if (snap.exists()) {
-        setDoc(docRef, {
+        setDoc(docRefPedido, {
           ...snap.data(),
           fotoUrl: base64Data
-        }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${idPedido}`));
+        }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${cleanId}`));
+      } else {
+        // 2. Try with uppercase ID in pedidos
+        const docRefPedidoUpper = doc(db, 'pedidos', upperId);
+        getDoc(docRefPedidoUpper).then(snapUpper => {
+          if (snapUpper.exists()) {
+            setDoc(docRefPedidoUpper, {
+              ...snapUpper.data(),
+              fotoUrl: base64Data
+            }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${upperId}`));
+          } else {
+            // 3. Try in recolecciones with exact ID
+            const docRefRec = doc(db, 'recolecciones', cleanId);
+            getDoc(docRefRec).then(snapRec => {
+              if (snapRec.exists()) {
+                setDoc(docRefRec, {
+                  ...snapRec.data(),
+                  fotoUrl: base64Data
+                }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${cleanId}`));
+              } else {
+                // 4. Try in recolecciones with uppercase ID
+                const docRefRecUpper = doc(db, 'recolecciones', upperId);
+                getDoc(docRefRecUpper).then(snapRecUpper => {
+                  if (snapRecUpper.exists()) {
+                    setDoc(docRefRecUpper, {
+                      ...snapRecUpper.data(),
+                      fotoUrl: base64Data
+                    }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${upperId}`));
+                  }
+                });
+              }
+            });
+          }
+        });
       }
     });
+
     return url;
   };
 

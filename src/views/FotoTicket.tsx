@@ -8,6 +8,7 @@ import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
 import { Pedido } from '../types';
 import { Camera, ArrowLeft, ArrowUpCircle, Eye, X, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { compressBase64Image } from '../lib/imageCompressor';
 
 export const FotoTicket: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
   const {
@@ -38,8 +39,15 @@ export const FotoTicket: React.FC<{ lockedStore?: string }> = ({ lockedStore }) 
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setCapturedFoto(event.target?.result as string);
+      reader.onload = async (event) => {
+        const rawBase64 = event.target?.result as string;
+        try {
+          const compressed = await compressBase64Image(rawBase64);
+          setCapturedFoto(compressed);
+        } catch (error) {
+          console.error("Compression failed, using raw base64 instead:", error);
+          setCapturedFoto(rawBase64);
+        }
       };
       reader.readAsDataURL(file);
     }

@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
 import { Truck, MapPin, Phone, CheckCircle, Play, Image, Upload, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { compressBase64Image } from '../lib/imageCompressor';
 
 export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) => {
   const {
@@ -158,8 +159,15 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setCapturedFoto(event.target?.result as string);
+      reader.onload = async (event) => {
+        const rawBase64 = event.target?.result as string;
+        try {
+          const compressed = await compressBase64Image(rawBase64);
+          setCapturedFoto(compressed);
+        } catch (error) {
+          console.error("Compression failed, using raw base64 instead:", error);
+          setCapturedFoto(rawBase64);
+        }
       };
       reader.readAsDataURL(file);
     }
