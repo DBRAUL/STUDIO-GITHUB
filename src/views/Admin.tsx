@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
-import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye } from 'lucide-react';
+import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const Admin: React.FC = () => {
@@ -520,12 +520,33 @@ export const Admin: React.FC = () => {
                       <Edit2 size={12} />
                       Modificar
                     </button>
-                    <button 
-                      onClick={() => handleDeletePedido(p.ticket)}
-                      className="text-rose-400 hover:text-white bg-rose-950/20 hover:bg-rose-900 border border-slate-800 hover:border-rose-900 p-2 rounded-lg transition"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex gap-1 items-center">
+                      {p.fotoUrl && (
+                        <button 
+                          onClick={() => {
+                            Swal.fire({
+                              title: `Evidencia del Ticket: #${p.ticket}`,
+                              imageUrl: p.fotoUrl,
+                              imageAlt: `Foto Ticket #${p.ticket}`,
+                              background: '#0d1b2a',
+                              color: '#fff',
+                              confirmButtonColor: '#0ea5e9',
+                              confirmButtonText: 'Cerrar'
+                            });
+                          }}
+                          title="Ver Evidencia de Ticket"
+                          className="p-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900/60 text-emerald-400 rounded-lg transition cursor-pointer"
+                        >
+                          <Camera size={14} />
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDeletePedido(p.ticket)}
+                        className="text-rose-400 hover:text-white bg-rose-950/20 hover:bg-rose-900 border border-slate-800 hover:border-rose-900 p-2 rounded-lg transition"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -598,17 +619,38 @@ export const Admin: React.FC = () => {
                   <div className="flex justify-between items-center gap-2 pt-4 border-t border-slate-800/85 mt-4">
                     <button 
                       onClick={() => handleOpenEditRec(r)}
-                      className="text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-750 px-3.5 py-2 rounded-lg cursor-pointer transition border border-slate-700/60 flex items-center gap-1.5"
+                      className="text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-755 px-3.5 py-2 rounded-lg cursor-pointer transition border border-slate-700/60 flex items-center gap-1.5"
                     >
                       <Edit2 size={12} />
                       Modificar
                     </button>
-                    <button 
-                      onClick={() => handleDeleteRec(r.id)}
-                      className="text-rose-455 hover:text-white bg-rose-950/20 hover:bg-rose-900 border border-slate-800 hover:border-rose-900 p-2 rounded-lg transition"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex gap-1 items-center">
+                      {r.fotoUrl && (
+                        <button 
+                          onClick={() => {
+                            Swal.fire({
+                              title: `Evidencia de Recolección: ${r.id}`,
+                              imageUrl: r.fotoUrl,
+                              imageAlt: `Foto Recolección ${r.id}`,
+                              background: '#0d1b2a',
+                              color: '#fff',
+                              confirmButtonColor: '#0ea5e9',
+                              confirmButtonText: 'Cerrar'
+                            });
+                          }}
+                          title="Ver Evidencia de Recolección"
+                          className="p-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900/60 text-emerald-400 rounded-lg transition cursor-pointer"
+                        >
+                          <Camera size={14} />
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDeleteRec(r.id)}
+                        className="text-rose-455 hover:text-white bg-rose-950/20 hover:bg-rose-900 border border-slate-800 hover:border-rose-900 p-2 rounded-lg transition"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -1082,7 +1124,15 @@ export const Admin: React.FC = () => {
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fecha Disponible</label>
-                <input type="date" value={rFechaDisp} onChange={(e) => setRFechaDisp(e.target.value)} required className="w-full bg-slate-900 border border-slate-755 text-slate-100 rounded-lg text-xs p-2.5 focus:outline-none" />
+                <input 
+                  type="date" 
+                  value={rFechaDisp} 
+                  onChange={(e) => setRFechaDisp(e.target.value)} 
+                  required 
+                  onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                  onFocus={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                  className="w-full bg-slate-900 border border-slate-755 text-slate-100 rounded-lg text-xs p-2.5 focus:outline-none cursor-pointer" 
+                />
               </div>
 
               <div className="pt-2">

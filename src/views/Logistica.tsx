@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate, normalizarFecha } from '../context/LogistikaContext';
 import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig } from '../types';
-import { Truck, MapPin, Search, Plus, Settings, Eye, Clock, Calendar, CheckCircle2, ChevronRight, X, Edit2, Trash2 } from 'lucide-react';
+import { Truck, MapPin, Search, Plus, Settings, Eye, Clock, Calendar, CheckCircle2, ChevronRight, X, Edit2, Trash2, Camera } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const Logistica: React.FC = () => {
@@ -517,6 +517,25 @@ export const Logistica: React.FC = () => {
                           <Clock size={14} />
                         </button>
                       )}
+                      {p.fotoUrl && (
+                        <button 
+                          onClick={() => {
+                            Swal.fire({
+                              title: `Evidencia del Ticket: #${p.ticket}`,
+                              imageUrl: p.fotoUrl,
+                              imageAlt: `Foto Ticket #${p.ticket}`,
+                              background: '#0d1b2a',
+                              color: '#fff',
+                              confirmButtonColor: '#0ea5e9',
+                              confirmButtonText: 'Cerrar'
+                            });
+                          }}
+                          title="Ver Evidencia de Ticket"
+                          className="p-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900/60 text-emerald-400 rounded-lg transition cursor-pointer"
+                        >
+                          <Camera size={14} />
+                        </button>
+                      )}
                       <a 
                         href={mapsUrl} 
                         target="_blank" 
@@ -618,6 +637,25 @@ export const Logistica: React.FC = () => {
                           <Clock size={14} />
                         </button>
                       )}
+                      {r.fotoUrl && (
+                        <button 
+                          onClick={() => {
+                            Swal.fire({
+                              title: `Evidencia de Recolección: ${r.id}`,
+                              imageUrl: r.fotoUrl,
+                              imageAlt: `Foto Recolección ${r.id}`,
+                              background: '#0d1b2a',
+                              color: '#fff',
+                              confirmButtonColor: '#0ea5e9',
+                              confirmButtonText: 'Cerrar'
+                            });
+                          }}
+                          title="Ver Evidencia de Recolección"
+                          className="p-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900/60 text-emerald-400 rounded-lg transition cursor-pointer"
+                        >
+                          <Camera size={14} />
+                        </button>
+                      )}
                       <a 
                         href={mapsUrl} 
                         target="_blank" 
@@ -658,7 +696,9 @@ export const Logistica: React.FC = () => {
                     value={editFechaEnvio}
                     onChange={(e) => handleEntregaChangeDriver(editChofer, e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg text-xs p-2.5 focus:outline-none"
+                    onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                    onFocus={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                    className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg text-xs p-2.5 focus:outline-none cursor-pointer"
                   />
                 </div>
 
@@ -769,7 +809,9 @@ export const Logistica: React.FC = () => {
                     value={editFechaRec}
                     onChange={(e) => handleRecChangeDriver(editChoferRec, e.target.value)}
                     required
-                    className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg text-xs p-2.5 focus:outline-none"
+                    onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                    onFocus={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                    className="w-full bg-slate-900 border border-slate-700 text-slate-100 rounded-lg text-xs p-2.5 focus:outline-none cursor-pointer"
                   />
                 </div>
 

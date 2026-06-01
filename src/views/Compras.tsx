@@ -568,7 +568,9 @@ export const Compras: React.FC = () => {
                   value={fechaRec}
                   onChange={(e) => setFechaRec(e.target.value)}
                   required
-                  className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-semibold"
+                  onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                  onFocus={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                  className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-semibold cursor-pointer"
                 />
               </div>
 
