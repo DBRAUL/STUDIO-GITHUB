@@ -106,7 +106,10 @@ export const Logistica: React.FC = () => {
 
   const handleEntregaChangeDriver = (chofer: string, fecha?: string) => {
     setEditChofer(chofer);
-    const targetFecha = fecha || editFechaEnvio;
+    if (fecha !== undefined) {
+      setEditFechaEnvio(fecha);
+    }
+    const targetFecha = fecha !== undefined ? fecha : editFechaEnvio;
     if (chofer && targetFecha) {
       const sig = obtenerSiguienteOrdenGlobal(chofer, targetFecha);
       setEditOrden(sig <= 10 ? sig : '');
@@ -161,7 +164,10 @@ export const Logistica: React.FC = () => {
 
   const handleRecChangeDriver = (chofer: string, fecha?: string) => {
     setEditChoferRec(chofer);
-    const targetFecha = fecha || editFechaRec;
+    if (fecha !== undefined) {
+      setEditFechaRec(fecha);
+    }
+    const targetFecha = fecha !== undefined ? fecha : editFechaRec;
     if (chofer && targetFecha) {
       const sig = obtenerSiguienteOrdenGlobal(chofer, targetFecha);
       setEditOrdenRec(sig);
