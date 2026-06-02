@@ -481,6 +481,22 @@ export const Logistica: React.FC = () => {
                       </p>
                     </div>
 
+                    {/* Meta info fields: Observaciones de Tienda, Notas de Compras, Ubicación Material */}
+                    <div className="bg-slate-950/30 border border-slate-850/40 rounded-lg p-2.5 space-y-1.5 text-[11px]">
+                      <div className="flex items-start gap-1">
+                        <span className="font-bold text-slate-400 shrink-0 w-[110px] uppercase tracking-wider text-[9px]">Obs. Tienda:</span>
+                        <span className="text-slate-300 font-medium break-all">{p.obs || <span className="text-slate-600 italic">Sin observaciones</span>}</span>
+                      </div>
+                      <div className="flex items-start gap-1">
+                        <span className="font-bold text-slate-400 shrink-0 w-[110px] uppercase tracking-wider text-[9px]">Notas Compras:</span>
+                        <span className="text-amber-400/90 font-medium break-all">{p.comprasObs || <span className="text-slate-600 italic">Sin notas</span>}</span>
+                      </div>
+                      <div className="flex items-start gap-1">
+                        <span className="font-bold text-slate-400 shrink-0 w-[110px] uppercase tracking-wider text-[9px]">Ubic. Material:</span>
+                        <span className="text-teal-400 font-mono font-semibold break-all">{p.comprasUbic || <span className="text-slate-600 italic font-normal">Sin ubicación</span>}</span>
+                      </div>
+                    </div>
+
                     {/* Logistics planning sequence indicators */}
                     <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-800/40 grid grid-cols-3 gap-2 text-center">
                       <div>
