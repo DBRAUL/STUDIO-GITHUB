@@ -87,7 +87,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
 
     let etaWindow = 'en los próximos minutos';
     if (isEntrega) {
-      etaWindow = obtenerEtaParaTicket(activeChofer, task.id, todayStr);
+      etaWindow = obtenerEtaParaTicket(activeChofer, task.id, todayStr, true);
     }
 
     const templateMsg = `Hola ${task.cliente}!!!\n\nSoy ${activeChofer}, chofer de la tienda ${task.tienda || 'LOGISTIKA'} y me dirijo a su domicilio para hacer la entrega de los materiales que usted adquirió con nosotros. Mi tiempo estimado de llegada es ${etaWindow} del día de hoy.`;

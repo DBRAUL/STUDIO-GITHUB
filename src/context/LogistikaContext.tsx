@@ -191,9 +191,9 @@ interface LogistikaContextType {
   obtenerTareasChofer: (nombre: string) => Array<any>;
   actualizarEstatusChofer: (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; fila?: number; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[] }) => string | boolean;
   subirFotoDrive: (idPedido: string, base64Data: string | string[]) => string;
-  obtenerEtaParaTicket: (chofer: string, idTicket: string, targetDate: string) => string;
+  obtenerEtaParaTicket: (chofer: string, idTicket: string, targetDate: string, startingNow?: boolean) => string;
   
-  obtenerProyeccionRuta: (nombreChofer: string, fechaFila: string) => { inicio: string; fechaConsultada: string; ruta: Array<any> };
+  obtenerProyeccionRuta: (nombreChofer: string, fechaFila: string, ticketStartingNow?: string) => { inicio: string; fechaConsultada: string; ruta: Array<any> };
   obtenerProyeccionRutaPorTienda: (ticket: string, tienda: string) => { ok: boolean; msg?: string; chofer?: string; fechaConsultada?: string; inicio?: string; ruta?: Array<any> };
 
   agregarChofer: (nombre: string) => void;
@@ -1089,20 +1089,30 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return `https://drive.google.com/thumbnail?id=simulated_file_${idPedido}_${new Date().getTime()}`;
   };
 
-  const _calcularCronograma = (ruta: any[], targetDate: string) => {
+  const _calcularCronograma = (ruta: any[], targetDate: string, ticketStartingNow?: string) => {
     const cronograma: any[] = [];
     const TIEMPO_DESCARGA = 30; // mins
     const MARGEN_VENTANA = 25; // mins
 
     let currTime = new Date(`${targetDate}T08:30:00`);
+    const todayStr = getMexicoCityDateStr();
+    const isToday = targetDate === todayStr;
+    const now = new Date();
 
     ruta.forEach(item => {
       const logEntry = logs.find(l => l.ticketId === item.id);
-      const tieneHoraInicio = !!logEntry?.horaInicio;
-      const tieneHoraFin = !!logEntry?.horaFin;
+      let tieneHoraInicio = !!logEntry?.horaInicio;
+      let tieneHoraFin = !!logEntry?.horaFin;
+      let horaInicioVal = logEntry?.horaInicio ? new Date(logEntry.horaInicio) : null;
+      let horaFinVal = logEntry?.horaFin ? new Date(logEntry.horaFin) : null;
 
-      if (tieneHoraFin) {
-        const horaFin = new Date(logEntry.horaFin || '');
+      if (item.id === ticketStartingNow) {
+        tieneHoraInicio = true;
+        tieneHoraFin = false;
+        horaInicioVal = now;
+      }
+
+      if (tieneHoraFin && horaFinVal) {
         cronograma.push({
           id: item.id,
           tipo: item.tipo,
@@ -1110,12 +1120,11 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           direccion: item.direccion,
           realizado: true,
           enRuta: false,
-          ventana: "FINALIZADO: " + horaFin.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+          ventana: "FINALIZADO: " + horaFinVal.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
         });
-        currTime = new Date(horaFin.getTime() + TIEMPO_DESCARGA * 60000);
-      } else if (tieneHoraInicio) {
-        const horaInicio = new Date(logEntry.horaInicio || '');
-        currTime = horaInicio;
+        currTime = new Date(horaFinVal.getTime() + TIEMPO_DESCARGA * 60000);
+      } else if (tieneHoraInicio && horaInicioVal) {
+        currTime = horaInicioVal;
         const minutosViaje = 15;
         const llegada = new Date(currTime.getTime() + minutosViaje * 60000);
         const ventanaFin = new Date(llegada.getTime() + MARGEN_VENTANA * 60000);
@@ -1133,6 +1142,11 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
         currTime = new Date(ventanaFin.getTime() + TIEMPO_DESCARGA * 60000);
       } else {
+        // Dynamic Offset: If calculating today's route, pending estimates cannot start in the past
+        if (isToday) {
+          currTime = new Date(Math.max(currTime.getTime(), now.getTime()));
+        }
+
         const minutosViaje = 15;
         const llegada = new Date(currTime.getTime() + minutosViaje * 60000);
         const ventanaFin = new Date(llegada.getTime() + MARGEN_VENTANA * 60000);
@@ -1155,12 +1169,13 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return cronograma;
   };
 
-  const obtenerProyeccionRuta = (nombreChofer: string, fechaFila: string) => {
+  const obtenerProyeccionRuta = (nombreChofer: string, fechaFila: string, ticketStartingNow?: string) => {
     const targetDate = normalizarFecha(fechaFila || new Date());
     const choferKey = nombreChofer.trim().toUpperCase();
 
     const rutaUnificada: any[] = [];
 
+    // Active deliveries
     pedidos.forEach(p => {
       if (p.chofer?.trim().toUpperCase() === choferKey && normalizarFecha(p.dateenv || '') === targetDate) {
         rutaUnificada.push({
@@ -1175,6 +1190,24 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     });
 
+    // Archived deliveries
+    historialEntregas.forEach(p => {
+      if (p.chofer?.trim().toUpperCase() === choferKey && normalizarFecha(p.dateenv || '') === targetDate) {
+        if (!rutaUnificada.some(x => x.id === p.ticket)) {
+          rutaUnificada.push({
+            id: p.ticket,
+            tipo: 'ENTREGA',
+            destino: p.cliente,
+            direccion: p.dir,
+            orden: p.orden || 99,
+            lat: p.lat,
+            lng: p.lng
+          });
+        }
+      }
+    });
+
+    // Active recolecciones
     recolecciones.forEach(r => {
       const rDate = r.fechaReal || r.fechaDisponible;
       if (r.chofer?.trim().toUpperCase() === choferKey && normalizarFecha(rDate || '') === targetDate) {
@@ -1190,8 +1223,26 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     });
 
+    // Archived recolecciones
+    historialRecolecciones.forEach(r => {
+      const rDate = r.fechaReal || r.fechaDisponible;
+      if (r.chofer?.trim().toUpperCase() === choferKey && normalizarFecha(rDate || '') === targetDate) {
+        if (!rutaUnificada.some(x => x.id === r.id)) {
+          rutaUnificada.push({
+            id: r.id,
+            tipo: 'RECOLECCIÓN',
+            destino: r.proveedor,
+            direccion: r.direccion,
+            orden: r.orden || 99,
+            lat: r.lat,
+            lng: r.lng
+          });
+        }
+      }
+    });
+
     rutaUnificada.sort((a, b) => a.orden - b.orden);
-    const crono = _calcularCronograma(rutaUnificada, targetDate);
+    const crono = _calcularCronograma(rutaUnificada, targetDate, ticketStartingNow);
 
     return {
       inicio: '08:30 AM',
@@ -1225,9 +1276,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   };
 
-  const obtenerEtaParaTicket = (chofer: string, idTicket: string, targetDate: string): string => {
+  const obtenerEtaParaTicket = (chofer: string, idTicket: string, targetDate: string, startingNow: boolean = false): string => {
     try {
-      const proy = obtenerProyeccionRuta(chofer, targetDate);
+      const proy = obtenerProyeccionRuta(chofer, targetDate, startingNow ? idTicket : undefined);
       const parada = proy.ruta.find(x => x.id === idTicket);
       if (parada && parada.ventana) {
         const v = parada.ventana.replace('ESTIMADO:', '').trim();
