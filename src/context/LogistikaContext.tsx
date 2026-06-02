@@ -966,7 +966,6 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               receptor: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO') ? d.receptor?.toUpperCase() : (currentData.receptor || '')
             };
             if (d.fotos && d.fotos.length > 0) {
-              updateObj.fotoUrl = d.fotos[0];
               updateObj.fotos = d.fotos;
             }
             setDoc(docRef, updateObj).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${d.id}`));
@@ -983,7 +982,6 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               fechaReal: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO' || d.nuevoEstatus.toUpperCase() === 'RECOLECTADO') ? ahora.split(' ')[0] : (currentData.fechaReal || '')
             };
             if (d.fotos && d.fotos.length > 0) {
-              updateObj.fotoUrl = d.fotos[0];
               updateObj.fotos = d.fotos;
             }
             setDoc(docRef, updateObj).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${d.id}`));
@@ -1050,8 +1048,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (snap.exists()) {
         setDoc(docRefPedido, {
           ...snap.data(),
-          fotoUrl: principalFoto,
-          fotos: urls
+          fotoUrl: principalFoto
         }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${cleanId}`));
       } else {
         // 2. Try with uppercase ID in pedidos
@@ -1060,8 +1057,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (snapUpper.exists()) {
             setDoc(docRefPedidoUpper, {
               ...snapUpper.data(),
-              fotoUrl: principalFoto,
-              fotos: urls
+              fotoUrl: principalFoto
             }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${upperId}`));
           } else {
             // 3. Try in recolecciones with exact ID
@@ -1070,8 +1066,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               if (snapRec.exists()) {
                 setDoc(docRefRec, {
                   ...snapRec.data(),
-                  fotoUrl: principalFoto,
-                  fotos: urls
+                  fotoUrl: principalFoto
                 }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${cleanId}`));
               } else {
                 // 4. Try in recolecciones with uppercase ID
@@ -1080,8 +1075,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   if (snapRecUpper.exists()) {
                     setDoc(docRefRecUpper, {
                       ...snapRecUpper.data(),
-                      fotoUrl: principalFoto,
-                      fotos: urls
+                      fotoUrl: principalFoto
                     }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${upperId}`));
                   }
                 });
