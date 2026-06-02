@@ -1178,7 +1178,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return Math.max(7, minsCalculado);
   };
 
-  const _calcularCronograma = (ruta: any[], targetDate: string, ticketStartingNow?: string) => {
+  const _calcularCronograma = (ruta: any[], targetDate: string, nombreChofer: string, ticketStartingNow?: string) => {
     const cronograma: any[] = [];
     const TIEMPO_DESCARGA = 30; // mins
     const MARGEN_VENTANA = 25; // mins
@@ -1203,7 +1203,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     ruta.forEach(item => {
-      const logEntry = logs.find(l => l.ticketId === item.id);
+      const logEntry = logs.find(l => l.ticketId === item.id && l.chofer?.trim().toUpperCase() === nombreChofer.trim().toUpperCase());
       let tieneHoraInicio = !!logEntry?.horaInicio;
       let tieneHoraFin = !!logEntry?.horaFin;
       let horaInicioVal = logEntry?.horaInicio ? new Date(logEntry.horaInicio) : null;
@@ -1298,7 +1298,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           direccion: p.dir,
           orden: p.orden || 99,
           lat: p.lat,
-          lng: p.lng
+          lng: p.lng,
+          tienda: p.tienda
         });
       }
     });
@@ -1314,7 +1315,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             direccion: p.dir,
             orden: p.orden || 99,
             lat: p.lat,
-            lng: p.lng
+            lng: p.lng,
+            tienda: p.tienda
           });
         }
       }
@@ -1331,7 +1333,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           direccion: r.direccion,
           orden: r.orden || 99,
           lat: r.lat,
-          lng: r.lng
+          lng: r.lng,
+          tienda: ''
         });
       }
     });
@@ -1348,17 +1351,51 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             direccion: r.direccion,
             orden: r.orden || 99,
             lat: r.lat,
-            lng: r.lng
+            lng: r.lng,
+            tienda: ''
           });
         }
       }
     });
 
     rutaUnificada.sort((a, b) => a.orden - b.orden);
-    const crono = _calcularCronograma(rutaUnificada, targetDate, ticketStartingNow);
+
+    // Let's check if there is some activity (horaInicio or horaFin) recorded in logs for this driver on this route.
+    let earliestActivity: Date | null = null;
+    rutaUnificada.forEach(item => {
+      const logEntry = logs.find(l => l.ticketId === item.id && l.chofer?.trim().toUpperCase() === choferKey);
+      if (logEntry) {
+        if (logEntry.horaInicio) {
+          const d = new Date(logEntry.horaInicio);
+          if (!earliestActivity || d < earliestActivity) {
+            earliestActivity = d;
+          }
+        }
+        if (logEntry.horaFin) {
+          const d = new Date(logEntry.horaFin);
+          if (!earliestActivity || d < earliestActivity) {
+            earliestActivity = d;
+          }
+        }
+      }
+    });
+
+    if (ticketStartingNow) {
+      earliestActivity = new Date();
+    }
+
+    const formatTo12h = (d: Date): string => {
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    };
+
+    const displayInicio = earliestActivity 
+      ? formatTo12h(earliestActivity) 
+      : 'Pendiente (Al iniciar primer recorrido)';
+
+    const crono = _calcularCronograma(rutaUnificada, targetDate, nombreChofer, ticketStartingNow);
 
     return {
-      inicio: '08:30 AM',
+      inicio: displayInicio,
       fechaConsultada: formatedDisplayDate(targetDate),
       ruta: crono
     };

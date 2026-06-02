@@ -1072,7 +1072,12 @@ export const Logistica: React.FC = () => {
 
             <div className="bg-teal-950/40 border border-teal-900 text-teal-300 p-3 rounded-lg text-xs text-center space-y-1 mb-4">
               <p className="font-bold">📅 RUTA: {cronoData.fechaConsultada}</p>
-              <p className="opacity-95">Salida estimada de Bodega: {cronoData.inicio}</p>
+              <p className="opacity-95 text-slate-300 text-center">
+                <span className="font-semibold text-slate-100">Salida de Bodega:</span>{' '}
+                <span className={cronoData.inicio.includes('Pendiente') ? 'text-teal-400 italic font-medium' : 'text-emerald-400 font-bold'}>
+                  {cronoData.inicio}
+                </span>
+              </p>
             </div>
 
             <div className="relative border-l border-slate-800 pl-4 ml-2.5 space-y-4">

@@ -592,7 +592,12 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
 
             <div className="bg-teal-950/40 border border-teal-900 text-teal-300 p-3 rounded-lg text-xs text-center space-y-1 mb-5">
               <p className="font-bold">🚚 Chofer en Ruta: {cronoData.chofer}</p>
-              <p className="opacity-90">Salida estimada de Bodega: {cronoData.inicio}</p>
+              <p className="opacity-90 text-slate-300">
+                <span className="font-semibold text-slate-100">Salida de Bodega:</span>{' '}
+                <span className={cronoData.inicio?.includes('Pendiente') ? 'text-teal-400 italic font-medium' : 'text-emerald-400 font-bold'}>
+                  {cronoData.inicio}
+                </span>
+              </p>
               <p className="text-[10px] opacity-70">Fecha programada: {cronoData.fechaConsultada}</p>
             </div>
 
