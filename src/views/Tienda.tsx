@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
 import { Pedido } from '../types';
 import { Plus, Search, MapPin, Phone, MessageSquare, Edit2, Calendar, FileText, X, Check, Eye } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
   const {
@@ -329,7 +330,17 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
                       <div className="flex items-center gap-1.5">
                         {hasFoto ? (
                           <button 
-                            onClick={() => setZoomFotoUrl(p.fotoUrl || null)}
+                            onClick={() => {
+                              Swal.fire({
+                                title: `Foto del Ticket: #${p.ticket}`,
+                                imageUrl: p.fotoUrl,
+                                imageAlt: `Foto Ticket #${p.ticket}`,
+                                background: '#0d1b2a',
+                                color: '#fff',
+                                confirmButtonColor: '#0ea5e9',
+                                confirmButtonText: 'Cerrar'
+                              });
+                            }}
                             className="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-1 rounded inline-flex items-center gap-1 text-[11px] font-bold"
                           >
                             <Eye size={12} />

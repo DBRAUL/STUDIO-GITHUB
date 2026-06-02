@@ -4,9 +4,9 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
+import { useLogistika, formatedDisplayDate, getMexicoCityDateStr } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
-import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera } from 'lucide-react';
+import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera, FileText } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const Admin: React.FC = () => {
@@ -87,7 +87,7 @@ export const Admin: React.FC = () => {
   const enRutaCount = pedidos.filter(p => p.estatus === 'EN RUTA').length;
   const finalizadoCount = pedidos.filter(p => p.estatus === 'FINALIZADO').length;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getMexicoCityDateStr();
   const activeChoferesCount = new Set(
     pedidos.filter(p => p.chofer && p.dateenv === todayStr).map(p => p.chofer)
   ).size;
@@ -525,7 +525,7 @@ export const Admin: React.FC = () => {
                         <button 
                           onClick={() => {
                             Swal.fire({
-                              title: `Evidencia del Ticket: #${p.ticket}`,
+                              title: `Foto del Ticket: #${p.ticket}`,
                               imageUrl: p.fotoUrl,
                               imageAlt: `Foto Ticket #${p.ticket}`,
                               background: '#0d1b2a',
@@ -534,7 +534,52 @@ export const Admin: React.FC = () => {
                               confirmButtonText: 'Cerrar'
                             });
                           }}
-                          title="Ver Evidencia de Ticket"
+                          title="Ver Foto Ticket (Tienda)"
+                          className="p-2 bg-amber-950/60 hover:bg-amber-900 border border-amber-900/60 text-amber-500 rounded-lg transition cursor-pointer"
+                        >
+                          <FileText size={14} />
+                        </button>
+                      )}
+                      
+                      {p.fotos && p.fotos.length > 0 && (
+                        <button 
+                          onClick={() => {
+                            const pics = p.fotos || [];
+                            Swal.fire({
+                              title: `Evidencias de la Entrega: #${p.ticket}`,
+                              html: `
+                                <div class="space-y-3">
+                                  <p class="text-xs text-slate-400">El chofer capturó <strong>${pics.length}</strong> fotografías como evidencia de entrega.</p>
+                                  <div class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto p-1">
+                                    ${pics.map((f, i) => `
+                                      <div class="relative border border-slate-800 rounded-lg overflow-hidden bg-slate-950 aspect-[4/3] group">
+                                        <img src="${f}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-200" onclick="window.customShowFullPhoto('${f}')" />
+                                        <span class="absolute bottom-1 left-1 bg-slate-950/80 text-[9px] px-1.5 py-0.5 rounded text-slate-300 font-mono">#${i + 1}</span>
+                                      </div>
+                                    `).join('')}
+                                  </div>
+                                </div>
+                              `,
+                              background: '#0d1b2a',
+                              color: '#fff',
+                              confirmButtonColor: '#0ea5e9',
+                              confirmButtonText: 'Cerrar',
+                              didOpen: () => {
+                                (window as any).customShowFullPhoto = (src: string) => {
+                                  Swal.fire({
+                                    title: 'Evidencia Ampliada',
+                                    imageUrl: src,
+                                    imageAlt: 'Evidencia de Entrega',
+                                    background: '#0d1b2a',
+                                    color: '#fff',
+                                    confirmButtonColor: '#0ea5e9',
+                                    confirmButtonText: 'Atrás'
+                                  });
+                                };
+                              }
+                            });
+                          }}
+                          title="Ver Evidencias de Entrega (Chofer)"
                           className="p-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900/60 text-emerald-400 rounded-lg transition cursor-pointer"
                         >
                           <Camera size={14} />
@@ -629,16 +674,61 @@ export const Admin: React.FC = () => {
                         <button 
                           onClick={() => {
                             Swal.fire({
-                              title: `Evidencia de Recolección: ${r.id}`,
+                              title: `Foto del Ticket: ${r.id}`,
                               imageUrl: r.fotoUrl,
-                              imageAlt: `Foto Recolección ${r.id}`,
+                              imageAlt: `Foto Ticket ${r.id}`,
                               background: '#0d1b2a',
                               color: '#fff',
                               confirmButtonColor: '#0ea5e9',
                               confirmButtonText: 'Cerrar'
                             });
                           }}
-                          title="Ver Evidencia de Recolección"
+                          title="Ver Foto Ticket (Tienda)"
+                          className="p-2 bg-amber-950/60 hover:bg-amber-900 border border-amber-900/60 text-amber-500 rounded-lg transition cursor-pointer"
+                        >
+                          <FileText size={14} />
+                        </button>
+                      )}
+                      
+                      {r.fotos && r.fotos.length > 0 && (
+                        <button 
+                          onClick={() => {
+                            const pics = r.fotos || [];
+                            Swal.fire({
+                              title: `Evidencias de Recolección: ${r.id}`,
+                              html: `
+                                <div class="space-y-3">
+                                  <p class="text-xs text-slate-400">El chofer capturó <strong>${pics.length}</strong> fotografías de evidencia para la recolección.</p>
+                                  <div class="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto p-1">
+                                    ${pics.map((f, i) => `
+                                      <div class="relative border border-slate-800 rounded-lg overflow-hidden bg-slate-950 aspect-[4/3] group">
+                                        <img src="${f}" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition duration-200" onclick="window.customShowFullPhoto('${f}')" />
+                                        <span class="absolute bottom-1 left-1 bg-slate-950/80 text-[9px] px-1.5 py-0.5 rounded text-slate-300 font-mono">#${i + 1}</span>
+                                      </div>
+                                    `).join('')}
+                                  </div>
+                                </div>
+                              `,
+                              background: '#0d1b2a',
+                              color: '#fff',
+                              confirmButtonColor: '#0ea5e9',
+                              confirmButtonText: 'Cerrar',
+                              didOpen: () => {
+                                (window as any).customShowFullPhoto = (src: string) => {
+                                  Swal.fire({
+                                    title: 'Evidencia Ampliada',
+                                    imageUrl: src,
+                                    imageAlt: 'Evidencia de Recolección',
+                                    background: '#0d1b2a',
+                                    color: '#fff',
+                                    confirmButtonColor: '#0ea5e9',
+                                    confirmButtonText: 'Atrás'
+                                  });
+                                };
+                              }
+                            });
+                          }}
+                          title="Ver Evidencias de Recolección (Chofer)"
                           className="p-2 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900/60 text-emerald-400 rounded-lg transition cursor-pointer"
                         >
                           <Camera size={14} />

@@ -190,7 +190,7 @@ interface LogistikaContextType {
 
   obtenerTareasChofer: (nombre: string) => Array<any>;
   actualizarEstatusChofer: (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; fila?: number; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string }) => string | boolean;
-  subirFotoDrive: (idPedido: string, base64Data: string) => string;
+  subirFotoDrive: (idPedido: string, base64Data: string | string[]) => string;
   obtenerEtaParaTicket: (chofer: string, idTicket: string, targetDate: string) => string;
   
   obtenerProyeccionRuta: (nombreChofer: string, fechaFila: string) => { inicio: string; fechaConsultada: string; ruta: Array<any> };
@@ -259,6 +259,42 @@ export const normalizarFecha = (val: string | Date | undefined): string => {
     return new Date(parsed).toISOString().split('T')[0];
   }
   return s;
+};
+
+export const getMexicoCityDateTimeStr = (date: Date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(date);
+  
+  const map: { [key: string]: string } = {};
+  parts.forEach(p => {
+    map[p.type] = p.value;
+  });
+  
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+};
+
+export const getMexicoCityDateStr = (date: Date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  
+  const map: { [key: string]: string } = {};
+  parts.forEach(p => {
+    map[p.type] = p.value;
+  });
+  
+  return `${map.year}-${map.month}-${map.day}`;
 };
 
 export const formatedDisplayDate = (val: string | Date | undefined): string => {
@@ -480,7 +516,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         const nuevo: Pedido = {
           ticket: ticketNuevo,
-          fecha: new Date().toISOString().replace('T', ' ').substring(0, 19),
+          fecha: getMexicoCityDateTimeStr(),
           tienda: tiendaName.toUpperCase(),
           cliente: (datos.cliente || '').toUpperCase().trim(),
           tel: datos.tel || '',
@@ -497,7 +533,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           obsLogistica: '',
           lat: latitude,
           lng: longitude,
-          dateped: new Date().toISOString().split('T')[0]
+          dateped: getMexicoCityDateStr()
         };
         setDoc(doc(db, 'pedidos', ticketNuevo), nuevo)
           .catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${ticketNuevo}`));
@@ -556,7 +592,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         material: datos.material.toUpperCase(),
         fechaDisponible: datos.fechaDisponible,
         estatus: 'SOLICITADO',
-        fechaAlta: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        fechaAlta: getMexicoCityDateTimeStr(),
         lat: latitude,
         lng: longitude
       };
@@ -591,9 +627,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       direccion: (p.direccion || '').toUpperCase(),
       referencias: (p.referencias || '').toUpperCase(),
       material: (p.material || '').toUpperCase(),
-      fechaDisponible: p.fechaDisponible || new Date().toISOString().split('T')[0],
+      fechaDisponible: p.fechaDisponible || getMexicoCityDateStr(),
       estatus: 'PENDIENTE',
-      fechaAlta: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      fechaAlta: getMexicoCityDateTimeStr(),
       lat: latitude,
       lng: longitude
     };
@@ -905,7 +941,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const actualizarEstatusChofer = (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string }): string | boolean => {
     try {
-      const ahora = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const ahora = getMexicoCityDateTimeStr();
 
       if (d.hoja === 'DB_PEDIDOS') {
         const docRef = doc(db, 'pedidos', d.id);
@@ -978,8 +1014,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const subirFotoDrive = (idPedido: string, base64Data: string): string => {
-    const url = `https://drive.google.com/thumbnail?id=simulated_file_${idPedido}_${new Date().getTime()}`;
+  const subirFotoDrive = (idPedido: string, base64Data: string | string[]): string => {
+    const urls = Array.isArray(base64Data) ? base64Data : (base64Data ? [base64Data] : []);
+    const principalFoto = urls[0] || '';
     const cleanId = idPedido.trim();
     const upperId = idPedido.toUpperCase().trim();
 
@@ -989,7 +1026,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (snap.exists()) {
         setDoc(docRefPedido, {
           ...snap.data(),
-          fotoUrl: base64Data
+          fotoUrl: principalFoto,
+          fotos: urls
         }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${cleanId}`));
       } else {
         // 2. Try with uppercase ID in pedidos
@@ -998,7 +1036,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (snapUpper.exists()) {
             setDoc(docRefPedidoUpper, {
               ...snapUpper.data(),
-              fotoUrl: base64Data
+              fotoUrl: principalFoto,
+              fotos: urls
             }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${upperId}`));
           } else {
             // 3. Try in recolecciones with exact ID
@@ -1007,7 +1046,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               if (snapRec.exists()) {
                 setDoc(docRefRec, {
                   ...snapRec.data(),
-                  fotoUrl: base64Data
+                  fotoUrl: principalFoto,
+                  fotos: urls
                 }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${cleanId}`));
               } else {
                 // 4. Try in recolecciones with uppercase ID
@@ -1016,7 +1056,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   if (snapRecUpper.exists()) {
                     setDoc(docRefRecUpper, {
                       ...snapRecUpper.data(),
-                      fotoUrl: base64Data
+                      fotoUrl: principalFoto,
+                      fotos: urls
                     }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${upperId}`));
                   }
                 });
@@ -1027,7 +1068,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     });
 
-    return url;
+    return `https://drive.google.com/thumbnail?id=simulated_file_${idPedido}_${new Date().getTime()}`;
   };
 
   const _calcularCronograma = (ruta: any[], targetDate: string) => {
@@ -1372,7 +1413,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const archivarFinalizados = (): string => {
-    const ahora = new Date();
+    const ahoraStr = getMexicoCityDateTimeStr();
     const finalizadosPedidos = pedidos.filter(p => p.estatus === 'FINALIZADO');
     const finalizadosRecs = recolecciones.filter(r => r.estatus === 'FINALIZADO' || r.estatus === 'RECOLECTADO');
 
@@ -1383,7 +1424,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     finalizadosPedidos.forEach(p => {
       const archivedItem = {
         ...p,
-        fechaArchivado: ahora.toISOString().replace('T', ' ').substring(0, 19)
+        fechaArchivado: ahoraStr
       };
       setDoc(doc(db, 'historial_entregas', p.ticket), archivedItem)
         .then(() => {
@@ -1395,7 +1436,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     finalizadosRecs.forEach(r => {
       const archivedItem = {
         ...r,
-        fechaArchivado: ahora.toISOString().replace('T', ' ').substring(0, 19)
+        fechaArchivado: ahoraStr
       };
       setDoc(doc(db, 'historial_recolecciones', r.id), archivedItem)
         .then(() => {
@@ -1426,10 +1467,17 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
 
       if (item.fotos && item.fotos.length > 0) {
-        setDoc(doc(db, 'pedidos', item.id), {
-          ...pedidos.find(p => p.ticket === item.id),
-          fotoUrl: item.fotos[0]
-        }).catch(e => console.error(e));
+        const col = item.hoja === 'DB_PEDIDOS' ? 'pedidos' : 'recolecciones';
+        const docRef = doc(db, col, item.id);
+        getDoc(docRef).then(snap => {
+          if (snap.exists()) {
+            setDoc(docRef, {
+              ...snap.data(),
+              fotoUrl: item.fotos[0],
+              fotos: item.fotos
+            }).catch(e => console.error(e));
+          }
+        });
       }
     });
 

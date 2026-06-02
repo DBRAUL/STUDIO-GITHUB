@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
+import { useLogistika, formatedDisplayDate, getMexicoCityDateStr } from '../context/LogistikaContext';
 import { Truck, MapPin, Phone, CheckCircle, Play, Image, Upload, RefreshCw, Wifi, WifiOff, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { compressBase64Image } from '../lib/imageCompressor';
@@ -30,7 +30,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   // Active inputs inside delivery completions
   const [completionTicketId, setCompletionTicketId] = useState<string | null>(null);
   const [receptor, setReceptor] = useState('');
-  const [capturedFoto, setCapturedFoto] = useState<string | null>(null);
+  const [capturedFotos, setCapturedFotos] = useState<string[]>([]);
 
   const activeTaskList = obtenerTareasChofer(activeChofer);
 
@@ -83,7 +83,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
     const phoneClean = task.telefono ? task.telefono.replace(/\D/g, '') : '';
     const formattedTel = phoneClean.length === 10 ? `52${phoneClean}` : phoneClean;
     const isEntrega = task.tipo === 'Entrega';
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getMexicoCityDateStr();
 
     let etaWindow = 'en los próximos minutos';
     if (isEntrega) {
@@ -152,25 +152,39 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   const handleOpenFinalizar = (task: any) => {
     setCompletionTicketId(task.id);
     setReceptor('');
-    setCapturedFoto(null);
+    setCapturedFotos([]);
   };
 
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (capturedFotos.length >= 5) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Límite alcanzado',
+          text: 'Solo se pueden agregar hasta 5 fotografías de la entrega.',
+          background: '#0d1b2a',
+          color: '#fff'
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onload = async (event) => {
         const rawBase64 = event.target?.result as string;
         try {
           const compressed = await compressBase64Image(rawBase64);
-          setCapturedFoto(compressed);
+          setCapturedFotos(prev => [...prev, compressed]);
         } catch (error) {
           console.error("Compression failed, using raw base64 instead:", error);
-          setCapturedFoto(rawBase64);
+          setCapturedFotos(prev => [...prev, rawBase64]);
         }
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveFoto = (idxToRemove: number) => {
+    setCapturedFotos(prev => prev.filter((_, idx) => idx !== idxToRemove));
   };
 
   const handleCompleteTask = () => {
@@ -196,7 +210,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
         lat: 19.3980,
         lng: -99.2740,
         receptor: receptorLabel,
-        fotos: capturedFoto ? [capturedFoto] : []
+        fotos: capturedFotos
       });
 
       Swal.fire({
@@ -207,8 +221,8 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
         color: '#fff'
       });
     } else {
-      if (capturedFoto) {
-        subirFotoDrive(task.id, capturedFoto);
+      if (capturedFotos.length > 0) {
+        subirFotoDrive(task.id, capturedFotos);
       }
 
       actualizarEstatusChofer({
@@ -449,36 +463,62 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
 
               {/* Photo Evidence block */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Captura Fotográfica de Ticket</label>
-                <div className="bg-slate-950 border border-dashed border-slate-800 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-3">
-                  {capturedFoto ? (
-                    <div className="relative w-full max-h-48 overflow-hidden rounded-lg">
-                      <img src={capturedFoto} alt="Ticket Previo" className="w-full h-auto object-contain mx-auto" />
-                      <button 
-                        onClick={() => setCapturedFoto(null)}
-                        className="absolute right-2 top-2 bg-rose-600 hover:bg-rose-500 text-white rounded-full p-1 shadow"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
+                  Captura Fotográfica de la Entrega
+                </label>
+                
+                <div className="bg-slate-950 border border-dashed border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                  {capturedFotos.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center py-4 gap-2">
                       <Image size={32} className="text-slate-600" />
                       <div>
-                        <p className="text-[11px] text-slate-400 font-bold">Subir foto de ticket u obra</p>
-                        <p className="text-[9px] text-slate-500 mt-0.5">Captura directa desde la cámara móvil</p>
+                        <p className="text-[11px] text-slate-400 font-bold">Sin fotografías capturadas</p>
+                        <p className="text-[9px] text-slate-500 mt-0.5">Captura hasta 5 fotos directo con la cámara móvil</p>
                       </div>
-                    </>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        {capturedFotos.map((pic, idx) => (
+                          <div key={idx} className="relative aspect-square border border-slate-800 rounded-lg overflow-hidden bg-slate-900">
+                            <img 
+                              src={pic} 
+                              alt={`Foto ${idx + 1}`} 
+                              className="w-full h-full object-cover" 
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => handleRemoveFoto(idx)}
+                              className="absolute top-1 right-1 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full p-1 cursor-pointer shadow-lg outline-none"
+                              title="Suprimir foto"
+                            >
+                              <X size={10} />
+                            </button>
+                            <span className="absolute bottom-1 left-1 bg-slate-950/80 text-[8px] text-slate-300 px-1 py-0.5 rounded font-mono">
+                              #{idx + 1}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-teal-400 font-bold text-right">
+                        {capturedFotos.length} de 5 fotos capturadas
+                      </p>
+                    </div>
                   )}
 
-                  <button 
-                    type="button"
-                    onClick={() => document.getElementById('cameraInput')?.click()}
-                    className="bg-slate-850 hover:bg-slate-800 border border-slate-750 text-slate-200 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer transition inline-flex items-center gap-1 shrink-0"
-                  >
-                    <Upload size={12} />
-                    {capturedFoto ? 'Cambiar Foto' : 'Tomar Foto'}
-                  </button>
+                  {capturedFotos.length < 5 && (
+                    <div className="flex justify-center pt-1">
+                      <button 
+                        type="button"
+                        onClick={() => document.getElementById('cameraInput')?.click()}
+                        className="bg-teal-950/40 hover:bg-teal-900/60 border border-teal-900/50 hover:border-teal-800 text-teal-300 text-xs font-bold px-4 py-2.5 rounded-lg cursor-pointer transition inline-flex items-center gap-1.5 shadow"
+                      >
+                        <Upload size={12} />
+                        {capturedFotos.length > 0 ? 'Tomar Otra Foto' : 'Tomar Foto'}
+                      </button>
+                    </div>
+                  )}
+                  
                   <input 
                     type="file" 
                     id="cameraInput" 

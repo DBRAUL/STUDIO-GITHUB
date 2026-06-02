@@ -24,6 +24,7 @@ export interface Pedido {
   lng?: number | string; // Col R
   receptor?: string; // Col S
   fotoUrl?: string; // Col T (Foto Ticket URL)
+  fotos?: string[]; // Array of multiple delivery photo URLs or base64s
   dateped?: string; // formatted date for admin view
   numInt?: string;
 }
@@ -43,6 +44,8 @@ export interface Recoleccion {
   orden?: number | null; // Col L
   lat?: number | string; // Col M
   lng?: number | string; // Col N
+  fotoUrl?: string; // Optional single photo
+  fotos?: string[]; // Optional array of multiple photos
 }
 
 export interface ChoferConfig {

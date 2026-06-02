@@ -191,14 +191,14 @@ export const FotoTicket: React.FC<{ lockedStore?: string }> = ({ lockedStore }) 
               <div className="bg-emerald-950/20 text-emerald-400 border border-emerald-950/40 p-3 rounded-lg flex items-center gap-2 text-xs">
                 <CheckCircle2 size={16} className="shrink-0" />
                 <div className="truncate">
-                  <p className="font-bold">Foto Registrada Previamente</p>
+                  <p className="font-bold">Foto del Ticket Registrada Previamente</p>
                   <a 
                     href={activePedidoItem.fotoUrl} 
                     target="_blank" 
                     rel="noreferrer"
                     className="text-teal-400 text-[10px] underline font-bold cursor-pointer block mt-0.5"
                   >
-                    Ver archivo original en Google Drive ↗
+                    Ver archivo en Google Drive ↗
                   </a>
                 </div>
               </div>

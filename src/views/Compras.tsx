@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
 import { Clipboard, Truck, Search, Plus, MapPin, Eye, FileText, CheckCircle2, MessageCircle, MoreVertical, X } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export const Compras: React.FC = () => {
   const {
@@ -268,14 +269,23 @@ export const Compras: React.FC = () => {
                         </span>
 
                         {isParcial && hasFoto && (
-                          <a 
-                            href={p.fotoUrl} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-emerald-400 text-[10px] font-bold bg-emerald-950/50 border border-emerald-900 px-2 py-1 rounded inline-flex items-center gap-0.5"
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              Swal.fire({
+                                title: `Foto del Ticket: #${p.ticket}`,
+                                imageUrl: p.fotoUrl,
+                                imageAlt: `Foto Ticket #${p.ticket}`,
+                                background: '#0d1b2a',
+                                color: '#fff',
+                                confirmButtonColor: '#0ea5e9',
+                                confirmButtonText: 'Cerrar'
+                              });
+                            }}
+                            className="text-emerald-400 text-[10px] font-bold bg-emerald-950/50 border border-emerald-900 px-2 py-1 rounded inline-flex items-center gap-0.5 cursor-pointer hover:bg-emerald-900/60 transition"
                           >
                             👁️ VER TICKET
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
