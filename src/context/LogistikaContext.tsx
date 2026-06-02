@@ -189,7 +189,7 @@ interface LogistikaContextType {
   liberarOrden: (payload: { chofer: string; fecha: string; idActual: string; hojaActual: 'ENTREGAS' | 'RECOLECCIONES' }) => { ok: boolean };
 
   obtenerTareasChofer: (nombre: string) => Array<any>;
-  actualizarEstatusChofer: (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; fila?: number; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string }) => string | boolean;
+  actualizarEstatusChofer: (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; fila?: number; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[] }) => string | boolean;
   subirFotoDrive: (idPedido: string, base64Data: string | string[]) => string;
   obtenerEtaParaTicket: (chofer: string, idTicket: string, targetDate: string) => string;
   
@@ -901,7 +901,13 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     pedidos.forEach(p => {
       const choferP = (p.chofer || '').trim().toLowerCase();
-      const estatusP = p.estatus.toUpperCase();
+      
+      // Look for latest offline queue entry for this ticket
+      const offlineItems = offlineQueue.filter(item => item.id === p.ticket && item.hoja === 'DB_PEDIDOS');
+      const latestOffline = offlineItems.length > 0 ? offlineItems[offlineItems.length - 1] : null;
+      const estatus = latestOffline ? latestOffline.nuevoEstatus : p.estatus;
+      const estatusP = estatus.toUpperCase();
+
       if (choferP === nombreB && estatusP !== 'FINALIZADO') {
         res.push({
           id: p.ticket,
@@ -910,7 +916,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           telefono: p.tel,
           direccion: p.dir,
           referencia: p.ref,
-          estatus: p.estatus,
+          estatus: estatus,
           tipo: 'Entrega',
           hoja: 'DB_PEDIDOS',
           orden: p.orden || 999
@@ -920,7 +926,13 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     recolecciones.forEach(r => {
       const choferR = (r.chofer || '').trim().toLowerCase();
-      const estatusR = r.estatus.toUpperCase();
+      
+      // Look for latest offline queue entry for this recolección
+      const offlineItems = offlineQueue.filter(item => item.id === r.id && item.hoja === 'DB_RECOLECCIONES');
+      const latestOffline = offlineItems.length > 0 ? offlineItems[offlineItems.length - 1] : null;
+      const estatus = latestOffline ? latestOffline.nuevoEstatus : r.estatus;
+      const estatusR = estatus.toUpperCase();
+
       if (choferR === nombreB && estatusR !== 'FINALIZADO' && estatusR !== 'RECOLECTADO') {
         res.push({
           id: r.id,
@@ -928,7 +940,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           telefono: '',
           direccion: r.direccion,
           referencia: r.referencias,
-          estatus: r.estatus,
+          estatus: estatus,
           tipo: 'Recolección',
           hoja: 'DB_RECOLECCIONES',
           orden: r.orden || 999
@@ -939,7 +951,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return res.sort((a, b) => a.orden - b.orden);
   };
 
-  const actualizarEstatusChofer = (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string }): string | boolean => {
+  const actualizarEstatusChofer = (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[] }): string | boolean => {
     try {
       const ahora = getMexicoCityDateTimeStr();
 
@@ -947,22 +959,34 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const docRef = doc(db, 'pedidos', d.id);
         getDoc(docRef).then(snap => {
           if (snap.exists()) {
-            setDoc(docRef, {
-              ...snap.data(),
+            const currentData = snap.data();
+            const updateObj: any = {
+              ...currentData,
               estatus: d.nuevoEstatus.toUpperCase() as any,
-              receptor: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO') ? d.receptor?.toUpperCase() : (snap.data().receptor || '')
-            }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${d.id}`));
+              receptor: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO') ? d.receptor?.toUpperCase() : (currentData.receptor || '')
+            };
+            if (d.fotos && d.fotos.length > 0) {
+              updateObj.fotoUrl = d.fotos[0];
+              updateObj.fotos = d.fotos;
+            }
+            setDoc(docRef, updateObj).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${d.id}`));
           }
         });
       } else {
         const docRef = doc(db, 'recolecciones', d.id);
         getDoc(docRef).then(snap => {
           if (snap.exists()) {
-            setDoc(docRef, {
-              ...snap.data(),
+            const currentData = snap.data();
+            const updateObj: any = {
+              ...currentData,
               estatus: d.nuevoEstatus.toUpperCase() as any,
-              fechaReal: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO' || d.nuevoEstatus.toUpperCase() === 'RECOLECTADO') ? ahora.split(' ')[0] : (snap.data().fechaReal || '')
-            }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${d.id}`));
+              fechaReal: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO' || d.nuevoEstatus.toUpperCase() === 'RECOLECTADO') ? ahora.split(' ')[0] : (currentData.fechaReal || '')
+            };
+            if (d.fotos && d.fotos.length > 0) {
+              updateObj.fotoUrl = d.fotos[0];
+              updateObj.fotos = d.fotos;
+            }
+            setDoc(docRef, updateObj).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${d.id}`));
           }
         });
       }
@@ -1463,22 +1487,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         chofer: item.chofer,
         lat: item.lat,
         lng: item.lng,
-        receptor: item.receptor
+        receptor: item.receptor,
+        fotos: item.fotos
       });
-
-      if (item.fotos && item.fotos.length > 0) {
-        const col = item.hoja === 'DB_PEDIDOS' ? 'pedidos' : 'recolecciones';
-        const docRef = doc(db, col, item.id);
-        getDoc(docRef).then(snap => {
-          if (snap.exists()) {
-            setDoc(docRef, {
-              ...snap.data(),
-              fotoUrl: item.fotos[0],
-              fotos: item.fotos
-            }).catch(e => console.error(e));
-          }
-        });
-      }
     });
 
     const count = offlineQueue.length;

@@ -221,10 +221,6 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
         color: '#fff'
       });
     } else {
-      if (capturedFotos.length > 0) {
-        subirFotoDrive(task.id, capturedFotos);
-      }
-
       actualizarEstatusChofer({
         id: task.id,
         hoja: task.hoja,
@@ -232,7 +228,8 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
         chofer: activeChofer,
         lat: 19.3980,
         lng: -99.2740,
-        receptor: receptorLabel
+        receptor: receptorLabel,
+        fotos: capturedFotos
       });
 
       Swal.fire({
