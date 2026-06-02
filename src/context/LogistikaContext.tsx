@@ -1089,6 +1089,95 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return `https://drive.google.com/thumbnail?id=simulated_file_${idPedido}_${new Date().getTime()}`;
   };
 
+  const calcularDistanciaKm = (lat1: number | string, lng1: number | string, lat2: number | string, lng2: number | string): number => {
+    const p1Lat = typeof lat1 === 'string' ? parseFloat(lat1) : lat1;
+    const p1Lng = typeof lng1 === 'string' ? parseFloat(lng1) : lng1;
+    const p2Lat = typeof lat2 === 'string' ? parseFloat(lat2) : lat2;
+    const p2Lng = typeof lng2 === 'string' ? parseFloat(lng2) : lng2;
+
+    if (isNaN(p1Lat) || isNaN(p1Lng) || isNaN(p2Lat) || isNaN(p2Lng)) return 5.0; // Fallback distance in km
+
+    const R = 6371; // Earth ratio in km
+    const dLat = (p2Lat - p1Lat) * Math.PI / 180;
+    const dLng = (p2Lng - p1Lng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(p1Lat * Math.PI / 180) * Math.cos(p2Lat * Math.PI / 180) * 
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const obtenerVelocidadPromedioYMultiplicador = (currTime: Date): { velocidadKmh: number; factorCircuito: number; overheadDeManiobraMins: number } => {
+    const horas = currTime.getHours() + currTime.getMinutes() / 60;
+    let velocidadKmh = 25.0; // Base speed: 25 km/h
+    let overheadDeManiobraMins = 5; // buffer for parking, gates, signature
+    
+    // Circuity factor (Manhattan index) converts geodesic distance to realistic urban pathways in CDMX/EdoMex
+    const factorCircuito = 1.35; 
+
+    // Dynamic Traffic Speed Profiles
+    if (horas >= 8.0 && horas < 10.5) {
+      // morning rush
+      velocidadKmh = 14.0; 
+      overheadDeManiobraMins = 8;
+    } else if (horas >= 10.5 && horas < 13.5) {
+      // mid morning off-peak
+      velocidadKmh = 24.0;
+      overheadDeManiobraMins = 5;
+    } else if (horas >= 13.5 && horas < 16.0) {
+      // lunch rush hour
+      velocidadKmh = 18.0;
+      overheadDeManiobraMins = 7;
+    } else if (horas >= 16.0 && horas < 18.0) {
+      // afternoon off-peak
+      velocidadKmh = 22.0;
+      overheadDeManiobraMins = 5;
+    } else if (horas >= 18.0 && horas < 20.5) {
+      // evening rush hour
+      velocidadKmh = 11.0;
+      overheadDeManiobraMins = 10;
+    } else {
+      // nighttime
+      velocidadKmh = 32.0;
+      overheadDeManiobraMins = 3;
+    }
+
+    // Weekend factor adjustments
+    const diaSemana = currTime.getDay(); // 0 is Sunday, 6 is Saturday
+    if (diaSemana === 0) {
+      // Sunday has lightweight traffic
+      velocidadKmh *= 1.45;
+      overheadDeManiobraMins = Math.max(3, overheadDeManiobraMins - 3);
+    } else if (diaSemana === 6) {
+      // Saturday has intermediate traffic
+      velocidadKmh *= 1.15;
+    }
+
+    return { velocidadKmh, factorCircuito, overheadDeManiobraMins };
+  };
+
+  const calcularMinutosViaje = (
+    latOri: number | string, lngOri: number | string,
+    latDest: number | string, lngDest: number | string,
+    currTime: Date
+  ): number => {
+    const distanceLineal = calcularDistanciaKm(latOri, lngOri, latDest, lngDest);
+
+    // Highly proximate stops (same complex, street block or adjacent building)
+    if (distanceLineal < 0.18) {
+      return 3; // 3 minutes parking/maneuvering
+    }
+
+    const { velocidadKmh, factorCircuito, overheadDeManiobraMins } = obtenerVelocidadPromedioYMultiplicador(currTime);
+    const distanciaCalle = distanceLineal * factorCircuito;
+    const horasViaje = distanciaCalle / velocidadKmh;
+    const minsCalculado = Math.round(horasViaje * 60) + overheadDeManiobraMins;
+
+    // Set a solid operational floor of at least 7 minutes transit between any standard physical locations
+    return Math.max(7, minsCalculado);
+  };
+
   const _calcularCronograma = (ruta: any[], targetDate: string, ticketStartingNow?: string) => {
     const cronograma: any[] = [];
     const TIEMPO_DESCARGA = 30; // mins
@@ -1099,12 +1188,30 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const isToday = targetDate === todayStr;
     const now = new Date();
 
+    // Establish the driver's start location for the daily sequence
+    let lastLat: number | string = 19.367508;
+    let lastLng: number | string = -99.284752;
+
+    const primerItem = ruta[0];
+    if (primerItem && primerItem.tienda) {
+      const st = tiendas.find(t => t.nombre.toUpperCase().trim() === primerItem.tienda.toUpperCase().trim());
+      if (st) {
+        const geoStore = mockGeocode(st.direccion || '');
+        lastLat = geoStore.latitude;
+        lastLng = geoStore.longitude;
+      }
+    }
+
     ruta.forEach(item => {
       const logEntry = logs.find(l => l.ticketId === item.id);
       let tieneHoraInicio = !!logEntry?.horaInicio;
       let tieneHoraFin = !!logEntry?.horaFin;
       let horaInicioVal = logEntry?.horaInicio ? new Date(logEntry.horaInicio) : null;
       let horaFinVal = logEntry?.horaFin ? new Date(logEntry.horaFin) : null;
+
+      // Clean current location coords for distance calculations
+      const destLat = item.lat || 19.367508;
+      const destLng = item.lng || -99.284752;
 
       if (item.id === ticketStartingNow) {
         tieneHoraInicio = true;
@@ -1122,10 +1229,12 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           enRuta: false,
           ventana: "FINALIZADO: " + horaFinVal.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
         });
-        currTime = new Date(horaFinVal.getTime() + TIEMPO_DESCARGA * 60000);
+        // The driver leaves immediately after finalising the delivery download. 
+        // No extra TIEMPO_DESCARGA is added to currTime because the task is already finalized.
+        currTime = horaFinVal;
       } else if (tieneHoraInicio && horaInicioVal) {
         currTime = horaInicioVal;
-        const minutosViaje = 15;
+        const minutosViaje = calcularMinutosViaje(lastLat, lastLng, destLat, destLng, currTime);
         const llegada = new Date(currTime.getTime() + minutosViaje * 60000);
         const ventanaFin = new Date(llegada.getTime() + MARGEN_VENTANA * 60000);
 
@@ -1147,7 +1256,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           currTime = new Date(Math.max(currTime.getTime(), now.getTime()));
         }
 
-        const minutosViaje = 15;
+        const minutosViaje = calcularMinutosViaje(lastLat, lastLng, destLat, destLng, currTime);
         const llegada = new Date(currTime.getTime() + minutosViaje * 60000);
         const ventanaFin = new Date(llegada.getTime() + MARGEN_VENTANA * 60000);
 
@@ -1164,6 +1273,10 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         });
         currTime = new Date(ventanaFin.getTime() + TIEMPO_DESCARGA * 60000);
       }
+
+      // Progress position tracker to the completed/forecast coordinates
+      lastLat = destLat;
+      lastLng = destLng;
     });
 
     return cronograma;
