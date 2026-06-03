@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useLogistika, formatedDisplayDate, getMexicoCityDateStr } from '../context/LogistikaContext';
+import { useLogistika, formatedDisplayDate, formatedDisplayDateTime, getMexicoCityDateStr } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
 import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera, FileText } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -473,9 +473,12 @@ export const Admin: React.FC = () => {
                 <div key={p.ticket} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-700/80 transition shadow">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center gap-1">
-                      <span className="font-mono text-xs font-bold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded">
-                        {p.ticket}
-                      </span>
+                      <div>
+                        <span className="font-mono text-xs font-bold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded">
+                          {p.ticket}
+                        </span>
+                        <p className="text-[10px] text-slate-450 mt-1">F. Creación: {formatedDisplayDateTime(p.fecha)}</p>
+                      </div>
                       {badgePedido(p.estatus)}
                     </div>
 
@@ -623,9 +626,12 @@ export const Admin: React.FC = () => {
                 <div key={r.id} className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-slate-700/80 transition shadow">
                   <div className="space-y-3.5">
                     <div className="flex justify-between items-center gap-1">
-                      <span className="font-mono text-xs font-bold text-amber-500">
-                        {r.id}
-                      </span>
+                      <div>
+                        <span className="font-mono text-xs font-bold text-amber-500">
+                          {r.id}
+                        </span>
+                        <p className="text-[10px] text-slate-450 mt-1">F. Creación: {formatedDisplayDateTime(r.fechaAlta)}</p>
+                      </div>
                       {badgeRec(r.estatus)}
                     </div>
 

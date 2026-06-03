@@ -436,7 +436,7 @@ function MainAppContent() {
 
       {/* Main interactive window viewport */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-fade-in duration-300">
+        <div className="animate-view-fade">
           {currentView === 'TIENDA' && <Tienda lockedStore={session.name} />}
           {currentView === 'COMPRAS' && <Compras />}
           {currentView === 'LOGISTICA' && <Logistica />}

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useLogistika, formatedDisplayDate, normalizarFecha } from '../context/LogistikaContext';
+import { useLogistika, formatedDisplayDate, formatedDisplayDateTime, normalizarFecha } from '../context/LogistikaContext';
 import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig } from '../types';
 import { Truck, MapPin, Search, Plus, Settings, Eye, Clock, Calendar, CheckCircle2, ChevronRight, X, Edit2, Trash2, Camera, FileText } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -451,9 +451,12 @@ export const Logistica: React.FC = () => {
                 <div key={p.ticket} className="bg-slate-900/40 border border-slate-880/60 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700/80 transition shadow">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded">
-                        {p.ticket}
-                      </span>
+                      <div>
+                        <span className="font-mono text-xs font-bold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded">
+                          {p.ticket}
+                        </span>
+                        <p className="text-[10px] text-slate-450 mt-1">F. Creación: {formatedDisplayDateTime(p.fecha)}</p>
+                      </div>
                       
                       {/* Active Logistics status indicator badge */}
                       <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full ${
@@ -634,9 +637,12 @@ export const Logistica: React.FC = () => {
                 <div key={r.id} className="bg-slate-900/40 border border-slate-880/60 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700/85 transition shadow">
                   <div className="space-y-4">
                     <div className="flex justify-between items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-amber-500">
-                        {r.id}
-                      </span>
+                      <div>
+                        <span className="font-mono text-xs font-bold text-amber-500">
+                          {r.id}
+                        </span>
+                        <p className="text-[10px] text-slate-450 mt-1">F. Creación: {formatedDisplayDateTime(r.fechaAlta)}</p>
+                      </div>
 
                       {/* Rec Tracker Badge */}
                       <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full ${
@@ -662,6 +668,11 @@ export const Logistica: React.FC = () => {
                         <MapPin size={11} className="text-rose-455 shrink-0 mt-0.5" />
                         <span>{r.direccion}</span>
                       </p>
+                      {r.fechaDisponible && (
+                        <div className="mt-2 text-amber-450 bg-amber-950/25 border border-amber-900/40 rounded px-2 py-0.5 w-fit text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                          📅 DISPONIBLE DESDE: {formatedDisplayDate(r.fechaDisponible)}
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-800/40 text-xs text-slate-300">
@@ -1012,7 +1023,7 @@ export const Logistica: React.FC = () => {
                 />
 
                 {sugProvs.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-slate-850 border border-slate-700 rounded-lg shadow-xl max-h-40 overflow-y-auto z-10 divide-y divide-slate-750">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
                     {sugProvs.map((pr, i) => (
                       <div 
                         key={i} 

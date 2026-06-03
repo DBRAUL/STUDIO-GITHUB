@@ -309,6 +309,31 @@ export const formatedDisplayDate = (val: string | Date | undefined): string => {
   return norm;
 };
 
+export const formatedDisplayDateTime = (val: string | undefined): string => {
+  if (!val) return '—';
+  const cleanStr = val.trim();
+  const tSplit = cleanStr.split(' ');
+  const datePart = tSplit[0];
+  const timePart = tSplit[1] || '';
+
+  const parts = datePart.split('-');
+  if (parts.length === 3) {
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const idx = parseInt(parts[1], 10) - 1;
+    const formattedDate = `${parts[2]}-${months[idx] ?? 'May'}-${parts[0]}`;
+    if (timePart) {
+      const timePieces = timePart.split(':');
+      if (timePieces.length >= 2) {
+        return `${formattedDate} ${timePieces[0]}:${timePieces[1]}`;
+      }
+      return `${formattedDate} ${timePart}`;
+    }
+    return formattedDate;
+  }
+  return val;
+};
+
+
 const mockGeocode = (address: string): { latitude: number; longitude: number } => {
   const s = address.toUpperCase();
   let lat = 19.367508;

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
+import { useLogistika, formatedDisplayDate, formatedDisplayDateTime } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
 import { Clipboard, Truck, Search, Plus, MapPin, Eye, FileText, CheckCircle2, MessageCircle, MoreVertical, X } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -216,9 +216,12 @@ export const Compras: React.FC = () => {
                   <div key={p.ticket} className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 flex flex-col justify-between hover:border-slate-700/60 transition shadow">
                     <div className="space-y-3.5">
                       <div className="flex justify-between items-start gap-2">
-                        <span className="font-mono text-xs font-bold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded">
-                          {p.ticket}
-                        </span>
+                        <div>
+                          <span className="font-mono text-xs font-bold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded">
+                            {p.ticket}
+                          </span>
+                          <p className="text-[10px] text-slate-450 mt-1">F. Creación: {formatedDisplayDateTime(p.fecha)}</p>
+                        </div>
                         
                         {/* Status Badge */}
                         <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full ${
@@ -330,9 +333,12 @@ export const Compras: React.FC = () => {
                 <div key={r.id} className="bg-slate-900/40 border border-slate-800 rounded-xl p-5 hover:border-slate-700/65 transition shadow flex flex-col justify-between">
                   <div className="space-y-3.5">
                     <div className="flex justify-between items-center">
-                      <span className="font-mono text-xs font-bold text-amber-400">
-                        {r.id}
-                      </span>
+                      <div>
+                        <span className="font-mono text-xs font-bold text-amber-400">
+                          {r.id}
+                        </span>
+                        <p className="text-[10px] text-slate-450 mt-1">F. Creación: {formatedDisplayDateTime(r.fechaAlta)}</p>
+                      </div>
 
                       {/* Recollection Tracker Status Badge */}
                       <span className={`text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full ${
@@ -509,7 +515,7 @@ export const Compras: React.FC = () => {
                 />
 
                 {sugProvs.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-slate-850 border border-slate-700 rounded-lg shadow-xl max-h-40 overflow-y-auto z-15 divide-y divide-slate-750">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-750 rounded-lg shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
                     {sugProvs.map((pr, i) => (
                       <div 
                         key={i} 

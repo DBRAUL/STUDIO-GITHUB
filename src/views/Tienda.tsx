@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { useLogistika, formatedDisplayDate } from '../context/LogistikaContext';
+import { useLogistika, formatedDisplayDate, formatedDisplayDateTime } from '../context/LogistikaContext';
 import { Pedido } from '../types';
 import { Plus, Search, MapPin, Phone, MessageSquare, Edit2, Calendar, FileText, X, Check, Eye } from 'lucide-react';
 import Swal from 'sweetalert2';
@@ -274,7 +274,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
                       <span className="font-mono text-xs font-bold text-slate-400 bg-slate-800/40 px-2 py-1 rounded">
                         #{p.ticket}
                       </span>
-                      <p className="text-slate-400 text-xs mt-1">{p.fecha}</p>
+                      <p className="text-slate-400 text-xs mt-1">F. Creación: {formatedDisplayDateTime(p.fecha)}</p>
                     </div>
 
                     {/* Status Badge */}
