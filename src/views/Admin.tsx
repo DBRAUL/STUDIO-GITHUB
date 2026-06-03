@@ -1093,7 +1093,7 @@ export const Admin: React.FC = () => {
       {pedModalOpen && editingPedido && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setPedModalOpen(false); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
@@ -1186,7 +1186,7 @@ export const Admin: React.FC = () => {
       {recModalOpen && editingRec && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setRecModalOpen(false); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">

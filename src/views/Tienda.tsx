@@ -398,7 +398,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
       {modalOpen && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl my-auto cursor-default">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
@@ -586,7 +586,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
       {cronoOpen && cronoData && (
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setCronoOpen(false); }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4 shrink-0">
