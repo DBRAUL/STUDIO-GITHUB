@@ -420,6 +420,16 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const runSeeding = async () => {
       try {
+        const lockRef = doc(db, 'system_config', 'seeding');
+        const lockSnap = await getDoc(lockRef);
+        
+        // If we already seeded this database successfully in the past, DO NOT seed anything again.
+        // This is crucial when the user intentionally clears orders for a new day.
+        if (lockSnap.exists() && lockSnap.data()?.seeded === true) {
+          console.log('[BOOT] Database is already initialized. Seeding step skipped.');
+          return;
+        }
+
         const seedConfig = [
           { name: 'pedidos', mock: initialPedidosMock, key: 'ticket' },
           { name: 'recolecciones', mock: initialRecsMock, key: 'id' },
@@ -428,17 +438,23 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           { name: 'tiendas', mock: initialTiendasMock, key: 'nombre' }
         ];
 
+        let seededAny = false;
         for (const target of seedConfig) {
           const colRef = collection(db, target.name);
           const snap = await getDocs(colRef);
           if (snap.empty) {
             console.log(`[BOOT] Seeding Firestore collection "${target.name}" with default mock values.`);
+            seededAny = true;
             for (const item of target.mock) {
               const docId = String((item as any)[target.key]).toUpperCase().trim().replace(/\//g, '-');
               await setDoc(doc(db, target.name, docId), item);
             }
           }
         }
+
+        // Set the permanent initialization lock so it never seeds again
+        await setDoc(lockRef, { seeded: true, timestamp: new Date().toISOString() });
+        console.log('[BOOT] Database initialization marked as completed in Firestore.');
       } catch (err) {
         console.warn('Seeding execution bypassed or failed: ', err);
       }
@@ -838,58 +854,216 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const guardarServicioConOrden = (p: { id: string; hoja: 'ENTREGAS' | 'RECOLECCIONES'; chofer: string; fecha: string; estatus: string; orden: number | ''; obs?: string; direccion?: string }): { ok: boolean; msg?: string; ordenFinal?: number | '' } => {
     try {
-      let viejo: { chofer?: string; fecha?: string; estatus?: string; orden?: number | null } | null = null;
-      
+      // 1. Prepare fully updated in-memory arrays
+      const updatedPedidos = [...pedidos];
+      const updatedRecs = [...recolecciones];
+
+      // Find the target element in current state arrays
+      const targetPedIdx = p.hoja === 'ENTREGAS' ? updatedPedidos.findIndex(x => x.ticket === p.id) : -1;
+      const targetRecIdx = p.hoja === 'RECOLECCIONES' ? updatedRecs.findIndex(x => x.id === p.id) : -1;
+
+      if (p.hoja === 'ENTREGAS' && targetPedIdx === -1) {
+        return { ok: false, msg: 'No se encontró el pedido a planificar en el listado.' };
+      }
+      if (p.hoja === 'RECOLECCIONES' && targetRecIdx === -1) {
+        return { ok: false, msg: 'No se encontró la recolección a planificar en el listado.' };
+      }
+
+      // Record the OLD state to identify changes
+      const viejo = p.hoja === 'ENTREGAS'
+        ? { chofer: updatedPedidos[targetPedIdx].chofer, fecha: updatedPedidos[targetPedIdx].dateenv, estatus: updatedPedidos[targetPedIdx].estatus, orden: updatedPedidos[targetPedIdx].orden }
+        : { chofer: updatedRecs[targetRecIdx].chofer, fecha: updatedRecs[targetRecIdx].fechaReal || updatedRecs[targetRecIdx].fechaDisponible, estatus: updatedRecs[targetRecIdx].estatus, orden: updatedRecs[targetRecIdx].orden };
+
+      // Make initial modifications to basic fields in the cloned objects
       if (p.hoja === 'ENTREGAS') {
-        const item = pedidos.find(x => x.ticket === p.id);
-        if (item) viejo = { chofer: item.chofer, fecha: item.dateenv, estatus: item.estatus, orden: item.orden };
+        updatedPedidos[targetPedIdx] = {
+          ...updatedPedidos[targetPedIdx],
+          chofer: p.chofer,
+          dateenv: p.fecha,
+          estatus: p.estatus as any,
+          obsLogistica: p.obs !== undefined ? p.obs : (updatedPedidos[targetPedIdx].obsLogistica || ''),
+          orden: p.orden === '' ? null : p.orden
+        };
       } else {
-        const item = recolecciones.find(x => x.id === p.id);
-        if (item) viejo = { chofer: item.chofer, fecha: item.fechaReal || item.fechaDisponible, estatus: item.estatus, orden: item.orden };
+        const currentRec = updatedRecs[targetRecIdx];
+        const { latitude, longitude } = p.direccion ? mockGeocode(p.direccion) : { latitude: currentRec.lat || 19.367508, longitude: currentRec.lng || -99.284752 };
+        updatedRecs[targetRecIdx] = {
+          ...currentRec,
+          chofer: p.chofer,
+          fechaReal: p.fecha,
+          estatus: p.estatus as any,
+          direccion: p.direccion ? p.direccion.toUpperCase() : currentRec.direccion,
+          lat: latitude,
+          lng: longitude,
+          orden: p.orden === '' ? null : p.orden
+        };
       }
 
-      if (viejo) {
-        const cambioChofer = String(viejo.chofer || '').toUpperCase() !== String(p.chofer || '').toUpperCase();
-        const cambioFecha = normalizarFecha(viejo.fecha || '') !== normalizarFecha(p.fecha || '');
-        const yaNoProgram = String(p.estatus || '').toUpperCase() !== 'PROGRAMADO';
+      // Check for driver / date / status assignment cambios that vacate the previous slot
+      const cambioChofer = String(viejo.chofer || '').toUpperCase() !== String(p.chofer || '').toUpperCase();
+      const cambioFecha = normalizarFecha(viejo.fecha || '') !== normalizarFecha(p.fecha || '');
+      const yaNoProgram = String(p.estatus || '').toUpperCase() !== 'PROGRAMADO';
 
-        if ((cambioChofer || cambioFecha || yaNoProgram) && String(viejo.estatus || '').toUpperCase() === 'PROGRAMADO') {
-          liberarOrden({ chofer: viejo.chofer || '', fecha: viejo.fecha || '', idActual: p.id, hojaActual: p.hoja });
-        }
+      if ((cambioChofer || cambioFecha || yaNoProgram) && String(viejo.estatus || '').toUpperCase() === 'PROGRAMADO') {
+        const oldChoferKey = (viejo.chofer || '').trim().toUpperCase();
+        const oldTargetDate = normalizarFecha(viejo.fecha || '');
+
+        // Gather remaining items for the old group to fill the gap sequentially
+        const oldGroupItems: Array<{ id: string; hoja: 'ENTREGAS' | 'RECOLECCIONES'; ordenActual: number | null }> = [];
+        updatedPedidos.forEach(x => {
+          if (x.ticket !== p.id &&
+              String(x.chofer || '').trim().toUpperCase() === oldChoferKey &&
+              normalizarFecha(x.dateenv || '') === oldTargetDate &&
+              String(x.estatus).toUpperCase() === 'PROGRAMADO') {
+            oldGroupItems.push({ id: x.ticket, hoja: 'ENTREGAS', ordenActual: x.orden ?? null });
+          }
+        });
+        updatedRecs.forEach(x => {
+          const rDate = x.fechaReal || x.fechaDisponible || '';
+          if (x.id !== p.id &&
+              String(x.chofer || '').trim().toUpperCase() === oldChoferKey &&
+              normalizarFecha(rDate) === oldTargetDate &&
+              String(x.estatus).toUpperCase() === 'PROGRAMADO') {
+            oldGroupItems.push({ id: x.id, hoja: 'RECOLECCIONES', ordenActual: x.orden ?? null });
+          }
+        });
+
+        oldGroupItems.sort((a, b) => {
+          if (a.ordenActual === null) return 1;
+          if (b.ordenActual === null) return -1;
+          return a.ordenActual - b.ordenActual;
+        });
+
+        oldGroupItems.forEach((x, index) => {
+          const nuevoSec = index + 1;
+          if (x.hoja === 'ENTREGAS') {
+            const pIdx = updatedPedidos.findIndex(item => item.ticket === x.id);
+            if (pIdx >= 0) updatedPedidos[pIdx].orden = nuevoSec;
+          } else {
+            const rIdx = updatedRecs.findIndex(item => item.id === x.id);
+            if (rIdx >= 0) updatedRecs[rIdx].orden = nuevoSec;
+          }
+        });
       }
 
+      // Process sequence numbering for the new slot
       let ordenFinal: number | '' = '';
       if (String(p.estatus).toUpperCase() === 'PROGRAMADO') {
+        const newChoferKey = p.chofer.trim().toUpperCase();
+        const newTargetDate = normalizarFecha(p.fecha);
+
+        // Gather all other programmed route items under this new assignment (excluding the current one)
+        const otherGroupItems: Array<{ id: string; hoja: 'ENTREGAS' | 'RECOLECCIONES'; ordenActual: number | null }> = [];
+        updatedPedidos.forEach(x => {
+          if (x.ticket !== p.id &&
+              String(x.chofer || '').trim().toUpperCase() === newChoferKey &&
+              normalizarFecha(x.dateenv || '') === newTargetDate &&
+              String(x.estatus).toUpperCase() === 'PROGRAMADO') {
+            otherGroupItems.push({ id: x.ticket, hoja: 'ENTREGAS', ordenActual: x.orden ?? null });
+          }
+        });
+        updatedRecs.forEach(x => {
+          const rDate = x.fechaReal || x.fechaDisponible || '';
+          if (x.id !== p.id &&
+              String(x.chofer || '').trim().toUpperCase() === newChoferKey &&
+              normalizarFecha(rDate) === newTargetDate &&
+              String(x.estatus).toUpperCase() === 'PROGRAMADO') {
+            otherGroupItems.push({ id: x.id, hoja: 'RECOLECCIONES', ordenActual: x.orden ?? null });
+          }
+        });
+
+        // Always sort existing others by order to avoid randomness
+        otherGroupItems.sort((a, b) => {
+          if (a.ordenActual === null) return 1;
+          if (b.ordenActual === null) return -1;
+          return a.ordenActual - b.ordenActual;
+        });
+
         if (p.orden === '') {
-          ordenFinal = obtenerSiguienteOrdenGlobal(p.chofer, p.fecha);
+          // If no sequence was designated, put it at the very first slot at the end
+          ordenFinal = otherGroupItems.length + 1;
+          if (p.hoja === 'ENTREGAS') {
+            updatedPedidos[targetPedIdx].orden = ordenFinal;
+          } else {
+            updatedRecs[targetRecIdx].orden = ordenFinal;
+          }
         } else {
-          ordenFinal = p.orden;
-          moverOrden({ chofer: p.chofer, fecha: p.fecha, idActual: p.id, hojaActual: p.hoja, ordenSolicitado: ordenFinal });
+          // Precise manual reordering shift desired
+          let destino = parseInt(String(p.orden)) || 1;
+          if (otherGroupItems.length > 0) {
+            destino = Math.max(1, Math.min(destino, otherGroupItems.length + 1));
+          }
+          ordenFinal = destino;
+
+          // Splice our current item into the sorted other list at the target index (destino - 1)
+          const targetItem = { 
+            id: p.id, 
+            hoja: p.hoja, 
+            ordenActual: p.orden
+          };
+          otherGroupItems.splice(destino - 1, 0, targetItem);
+
+          // Force precise sequential index numbers (1, 2, 3...) on all of them
+          otherGroupItems.forEach((x, index) => {
+            const nuevoSec = index + 1;
+            if (x.hoja === 'ENTREGAS') {
+              const pIdx = updatedPedidos.findIndex(item => item.ticket === x.id);
+              if (pIdx >= 0) updatedPedidos[pIdx].orden = nuevoSec;
+            } else {
+              const rIdx = updatedRecs.findIndex(item => item.id === x.id);
+              if (rIdx >= 0) updatedRecs[rIdx].orden = nuevoSec;
+            }
+          });
+        }
+      } else {
+        // Unprogram/revisar status gets order null
+        if (p.hoja === 'ENTREGAS') {
+          updatedPedidos[targetPedIdx].orden = null;
+        } else {
+          updatedRecs[targetRecIdx].orden = null;
         }
       }
 
-      if (p.hoja === 'ENTREGAS') {
-        actualizarPedidoLogistica({
-          id: p.id,
-          chofer: p.chofer,
-          fecha: p.fecha,
-          estatus: p.estatus,
-          orden: ordenFinal,
-          obs: p.obs
-        });
-      } else {
-        actualizarRecoleccionLogistica({
-          id: p.id,
-          chofer: p.chofer,
-          fecha: p.fecha,
-          estatus: p.estatus,
-          orden: ordenFinal,
-          direccion: p.direccion
-        });
-      }
+      // Update context in-memory lists state
+      setPedidos(updatedPedidos);
+      setRecolecciones(updatedRecs);
+
+      // Perform selective Firestore updates to minimize database I/O and prevent race condition locks
+      updatedPedidos.forEach(x => {
+        const orig = pedidos.find(o => o.ticket === x.ticket);
+        const hasChanges = !orig || 
+          orig.orden !== x.orden || 
+          orig.chofer !== x.chofer || 
+          orig.dateenv !== x.dateenv || 
+          orig.estatus !== x.estatus || 
+          orig.obsLogistica !== x.obsLogistica;
+        
+        if (hasChanges) {
+          setDoc(doc(db, 'pedidos', x.ticket), x).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${x.ticket}`));
+        }
+      });
+
+      updatedRecs.forEach(x => {
+        const orig = recolecciones.find(o => o.id === x.id);
+        const rDateOrig = orig ? (orig.fechaReal || orig.fechaDisponible || '') : '';
+        const rDateNew = x.fechaReal || x.fechaDisponible || '';
+        const hasChanges = !orig || 
+          orig.orden !== x.orden || 
+          orig.chofer !== x.chofer || 
+          rDateOrig !== rDateNew || 
+          orig.estatus !== x.estatus || 
+          orig.direccion !== x.direccion ||
+          orig.lat !== x.lat ||
+          orig.lng !== x.lng;
+
+        if (hasChanges) {
+          setDoc(doc(db, 'recolecciones', x.id), x).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${x.id}`));
+        }
+      });
 
       return { ok: true, ordenFinal: ordenFinal };
     } catch (e: any) {
+      console.error('Error saving service sequence custom order:', e);
       return { ok: false, msg: e.message };
     }
   };
