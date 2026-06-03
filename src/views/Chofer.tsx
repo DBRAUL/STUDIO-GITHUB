@@ -83,6 +83,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
     const phoneClean = task.telefono ? task.telefono.replace(/\D/g, '') : '';
     const formattedTel = phoneClean.length === 10 ? `52${phoneClean}` : phoneClean;
     const isEntrega = task.tipo === 'Entrega';
+    const isEntregaEnTienda = task.direccion && task.direccion.toUpperCase().includes('ENTREGA EN TIENDA');
     const todayStr = getMexicoCityDateStr();
 
     let etaWindow = 'en los próximos minutos';
@@ -92,7 +93,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
 
     const templateMsg = `Hola ${task.cliente}!!!\n\nSoy ${activeChofer}, chofer de la tienda ${task.tienda || 'LOGISTIKA'} y me dirijo a su domicilio para hacer la entrega de los materiales que usted adquirió con nosotros. Mi tiempo estimado de llegada es ${etaWindow} del día de hoy.`;
 
-    if (isEntrega && formattedTel) {
+    if (isEntrega && formattedTel && !isEntregaEnTienda) {
       const { isConfirmed } = await Swal.fire({
         title: 'Aviso de WhatsApp',
         html: `
