@@ -1095,7 +1095,7 @@ export const Admin: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setPedModalOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
               <h2 className="text-slate-100 font-bold text-[13px] tracking-widest uppercase">
                 ADMIN: EDITAR PEDIDO #{editingPedido.ticket}
@@ -1188,7 +1188,7 @@ export const Admin: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setRecModalOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
               <h2 className="text-slate-100 font-bold text-[13px] tracking-widest uppercase">
                 ADMIN: EDITAR REC {editingRec.id}

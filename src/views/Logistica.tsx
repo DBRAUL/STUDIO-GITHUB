@@ -803,7 +803,7 @@ export const Logistica: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setEntregasModalOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-base uppercase tracking-wider">
                 Planificar Envío: <span className="text-teal-400">#{selectedPedido.ticket}</span>
@@ -904,7 +904,7 @@ export const Logistica: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setRecsModalOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-base uppercase tracking-wider">
                 Planificar Recolección: <span className="text-teal-400">{selectedRec.id}</span>
@@ -991,7 +991,7 @@ export const Logistica: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setNuevaRecOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-sm tracking-widest uppercase">
                 Nueva Recolección Directa
@@ -1101,7 +1101,7 @@ export const Logistica: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) setCronoOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h3 className="font-bold text-slate-100 text-base">Cronograma: {cronoChofer}</h3>
               <button onClick={() => setCronoOpen(false)} className="text-slate-400 hover:text-slate-100">
@@ -1164,7 +1164,7 @@ export const Logistica: React.FC = () => {
           onClick={(e) => { if (e.target === e.currentTarget) { setActiveCatalog(null); setEditingItemIdx(null); } }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[85vh] my-auto cursor-default">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[85vh] my-8 cursor-default">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4 shrink-0">
               <h3 className="font-bold text-slate-100 text-lg uppercase tracking-wide flex items-center gap-1.5">
                 ⚙️ Catálogos: {activeCatalog}

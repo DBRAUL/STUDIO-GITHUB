@@ -436,7 +436,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
           onClick={(e) => { if (e.target === e.currentTarget) setCompletionTicketId(null); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4 shrink-0">
               <h3 className="font-bold text-slate-100 text-xs uppercase tracking-widest text-teal-400">
                 Evidencia de Entrega: #{completionTicketId}

@@ -400,7 +400,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
           onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl my-auto cursor-default">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl my-8 cursor-default">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-lg font-display">
                 {esEdicion ? 'EDITAR REGISTRO DE PEDIDO' : 'NUEVO REGISTRO DE PEDIDO'}
@@ -588,7 +588,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
           onClick={(e) => { if (e.target === e.currentTarget) setCronoOpen(false); }}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4 shrink-0">
               <h3 className="font-bold text-slate-100 font-display text-base">Cronograma de Entrega</h3>
               <button onClick={() => setCronoOpen(false)} className="text-slate-400 hover:text-slate-100">
