@@ -396,9 +396,12 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
 
       {/* REGISTER / EDIT MODAL */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl my-auto cursor-default">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-lg font-display">
                 {esEdicion ? 'EDITAR REGISTRO DE PEDIDO' : 'NUEVO REGISTRO DE PEDIDO'}
               </h2>
@@ -410,7 +413,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-grow">
               {msgError && (
                 <div className="bg-rose-950/40 text-rose-400 border border-rose-900/60 p-3 rounded-lg text-xs font-semibold">
                   {msgError}
@@ -581,27 +584,31 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
 
       {/* TRACKING TIMELINE CROCOGRAPH COMPONENT */}
       {cronoOpen && cronoData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-5 overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setCronoOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4 shrink-0">
               <h3 className="font-bold text-slate-100 font-display text-base">Cronograma de Entrega</h3>
               <button onClick={() => setCronoOpen(false)} className="text-slate-400 hover:text-slate-100">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="bg-teal-950/40 border border-teal-900 text-teal-300 p-3 rounded-lg text-xs text-center space-y-1 mb-5">
-              <p className="font-bold">🚚 Chofer en Ruta: {cronoData.chofer}</p>
-              <p className="opacity-90 text-slate-300">
-                <span className="font-semibold text-slate-100">Salida de Bodega:</span>{' '}
-                <span className={cronoData.inicio?.includes('Pendiente') ? 'text-teal-400 italic font-medium' : 'text-emerald-400 font-bold'}>
-                  {cronoData.inicio}
-                </span>
-              </p>
-              <p className="text-[10px] opacity-70">Fecha programada: {cronoData.fechaConsultada}</p>
-            </div>
+            <div className="overflow-y-auto flex-grow space-y-4">
+              <div className="bg-teal-950/40 border border-teal-900 text-teal-300 p-3 rounded-lg text-xs text-center space-y-1 mb-5">
+                <p className="font-bold">🚚 Chofer en Ruta: {cronoData.chofer}</p>
+                <p className="opacity-90 text-slate-300">
+                  <span className="font-semibold text-slate-100">Salida de Bodega:</span>{' '}
+                  <span className={cronoData.inicio?.includes('Pendiente') ? 'text-teal-400 italic font-medium' : 'text-emerald-400 font-bold'}>
+                    {cronoData.inicio}
+                  </span>
+                </p>
+                <p className="text-[10px] opacity-70">Fecha programada: {cronoData.fechaConsultada}</p>
+              </div>
 
-            <div className="relative border-l border-slate-800 pl-5 ml-2.5 space-y-6">
+              <div className="relative border-l border-slate-800 pl-5 ml-2.5 space-y-6">
               {cronoData.ruta.map((p: any, i: number) => (
                 <div key={i} className="relative">
                   {/* Point icon indicator */}
@@ -640,8 +647,9 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="pt-4 border-t border-slate-800 mt-5">
+          <div className="pt-4 border-t border-slate-800 mt-5 shrink-0">
               <button 
                 onClick={() => setCronoOpen(false)}
                 className="w-full bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold py-2.5 rounded-lg text-xs cursor-pointer transition"

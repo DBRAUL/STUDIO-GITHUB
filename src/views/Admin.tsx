@@ -1091,16 +1091,19 @@ export const Admin: React.FC = () => {
 
       {/* EDIT MODAL PEDIDOS */}
       {pedModalOpen && editingPedido && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-850">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setPedModalOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
               <h2 className="text-slate-100 font-bold text-[13px] tracking-widest uppercase">
                 ADMIN: EDITAR PEDIDO #{editingPedido.ticket}
               </h2>
               <button onClick={() => setPedModalOpen(false)} className="text-slate-400 hover:text-slate-100"><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleSavePedido} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSavePedido} className="p-6 space-y-4 overflow-y-auto flex-grow">
               {/* Warnings Block conditional on state */}
               {(editingPedido.estatus === 'EN RUTA' || editingPedido.estatus === 'FINALIZADO') && (
                 <div className="bg-amber-950/20 text-amber-400 border border-amber-900 p-4 rounded-xl flex gap-2 text-xs">
@@ -1181,16 +1184,19 @@ export const Admin: React.FC = () => {
 
       {/* EDIT MODAL RECOLECCION */}
       {recModalOpen && editingRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-850">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setRecModalOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
               <h2 className="text-slate-100 font-bold text-[13px] tracking-widest uppercase">
                 ADMIN: EDITAR REC {editingRec.id}
               </h2>
               <button onClick={() => setRecModalOpen(false)} className="text-slate-400 hover:text-slate-100"><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleSaveRec} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSaveRec} className="p-6 space-y-4 overflow-y-auto flex-grow">
               {editingRec.estatus === 'EN RUTA' && (
                 <div className="bg-amber-950/20 text-amber-400 border border-amber-900 p-3.5 rounded-xl flex gap-2 text-xs">
                   <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-500" />

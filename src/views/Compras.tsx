@@ -393,11 +393,14 @@ export const Compras: React.FC = () => {
         </div>
       )}
 
-      {/* DICTAMEN PURCHASES EDIT MODAL */}
+       {/* DICTAMEN PURCHASES EDIT MODAL */}
       {dictamenOpen && selectedPedido && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setDictamenOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-lg font-display uppercase tracking-wide">
                 Dictamen Compras
               </h2>
@@ -406,8 +409,8 @@ export const Compras: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleDictamenSubmit} className="p-6 space-y-4">
-              <div className="bg-amber-950/20 p-3.5 border border-amber-900/40 rounded-xl text-center">
+            <form onSubmit={handleDictamenSubmit} className="p-6 space-y-4 overflow-y-auto flex-grow">
+              <div className="bg-amber-950/20 p-3.5 border border-amber-900/40 rounded-xl text-center shrink-0">
                 <label className="block text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-1">Ticket Seleccionado</label>
                 <p className="font-mono text-lg font-bold text-slate-100">{selectedPedido.ticket}</p>
                 <p className="text-[11px] text-slate-400 mt-1">Cliente: {selectedPedido.cliente}</p>
@@ -451,7 +454,7 @@ export const Compras: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 pb-1 shrink-0">
                 <button 
                   type="submit"
                   className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wide transition shadow-lg shadow-amber-950/20 cursor-pointer"
@@ -466,9 +469,12 @@ export const Compras: React.FC = () => {
 
       {/* NUEVA RECOLECCION BUILDER MODAL */}
       {nuevaRecOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setNuevaRecOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-sm tracking-widest font-display uppercase text-amber-500">
                 Solicitud de Recolección
               </h2>
@@ -477,7 +483,7 @@ export const Compras: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleNuevaRecSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleNuevaRecSubmit} className="p-6 space-y-4 overflow-y-auto flex-grow">
               {msgError && (
                 <div className="bg-rose-950/40 text-rose-400 border border-rose-900 p-3 rounded-lg text-xs font-semibold">
                   {msgError}

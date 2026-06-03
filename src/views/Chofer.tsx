@@ -432,9 +432,12 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
 
       {/* FINALIZATION DETAILS FILLERS MODAL */}
       {completionTicketId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setCompletionTicketId(null); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4 shrink-0">
               <h3 className="font-bold text-slate-100 text-xs uppercase tracking-widest text-teal-400">
                 Evidencia de Entrega: #{completionTicketId}
               </h3>
@@ -443,7 +446,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-grow pr-1">
               {activeTaskList.find(t => t.id === completionTicketId)?.tipo === 'Entrega' && (
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">¿Quién Recibe el Material?</label>

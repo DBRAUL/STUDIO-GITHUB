@@ -799,9 +799,12 @@ export const Logistica: React.FC = () => {
 
       {/* ASSIGNMENT DELIVERIES POPUP MODAL */}
       {entregasModalOpen && selectedPedido && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setEntregasModalOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-base uppercase tracking-wider">
                 Planificar Envío: <span className="text-teal-400">#{selectedPedido.ticket}</span>
               </h2>
@@ -810,10 +813,10 @@ export const Logistica: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleEntregaSave} className="p-6 space-y-4">
+            <form onSubmit={handleEntregaSave} className="p-6 space-y-4 overflow-y-auto flex-grow">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Fecha Envío</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 font-bold">Fecha Envío</label>
                   <input 
                     type="date" 
                     value={editFechaEnvio}
@@ -882,7 +885,7 @@ export const Logistica: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 pb-1 shrink-0">
                 <button 
                   type="submit"
                   className="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wide transition shadow-lg shadow-teal-950 cursor-pointer"
@@ -897,9 +900,12 @@ export const Logistica: React.FC = () => {
 
       {/* ASSIGNMENT RECOLECCION POPUP MODAL */}
       {recsModalOpen && selectedRec && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setRecsModalOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-base uppercase tracking-wider">
                 Planificar Recolección: <span className="text-teal-400">{selectedRec.id}</span>
               </h2>
@@ -908,7 +914,7 @@ export const Logistica: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleRecSave} className="p-6 space-y-4">
+            <form onSubmit={handleRecSave} className="p-6 space-y-4 overflow-y-auto flex-grow">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 font-bold">Chofer Asignado</label>
                 <select 
@@ -966,7 +972,7 @@ export const Logistica: React.FC = () => {
                 </select>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 pb-1 shrink-0">
                 <button 
                   type="submit"
                   className="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wide transition shadow-lg shadow-teal-950 cursor-pointer"
@@ -979,11 +985,14 @@ export const Logistica: React.FC = () => {
         </div>
       )}
 
-      {/* NEW RECOLLECTION BY LOGISTICS BUILDER MODAL */}
+          {/* NEW RECOLLECTION BY LOGISTICS BUILDER MODAL */}
       {nuevaRecOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-5 border-b border-slate-800">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setNuevaRecOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h2 className="text-slate-100 font-bold text-sm tracking-widest uppercase">
                 Nueva Recolección Directa
               </h2>
@@ -992,7 +1001,7 @@ export const Logistica: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleNuevaRecLogSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleNuevaRecLogSubmit} className="p-6 space-y-4 overflow-y-auto flex-grow">
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">ID Folio</label>
                 <div className="flex">
@@ -1073,7 +1082,7 @@ export const Logistica: React.FC = () => {
                 />
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 pb-1 shrink-0">
                 <button 
                   type="submit"
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wide transition shadow-lg shadow-emerald-950 cursor-pointer"
@@ -1088,57 +1097,62 @@ export const Logistica: React.FC = () => {
 
       {/* TIMETRUCK CHRONOGRAM MODAL WINDOW */}
       {cronoOpen && cronoData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setCronoOpen(false); }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl my-auto cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
               <h3 className="font-bold text-slate-100 text-base">Cronograma: {cronoChofer}</h3>
               <button onClick={() => setCronoOpen(false)} className="text-slate-400 hover:text-slate-100">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="bg-teal-950/40 border border-teal-900 text-teal-300 p-3 rounded-lg text-xs text-center space-y-1 mb-4">
-              <p className="font-bold">📅 RUTA: {cronoData.fechaConsultada}</p>
-              <p className="opacity-95 text-slate-300 text-center">
-                <span className="font-semibold text-slate-100">Salida de Bodega:</span>{' '}
-                <span className={cronoData.inicio.includes('Pendiente') ? 'text-teal-400 italic font-medium' : 'text-emerald-400 font-bold'}>
-                  {cronoData.inicio}
-                </span>
-              </p>
-            </div>
+            <div className="p-6 overflow-y-auto flex-grow space-y-4">
+              <div className="bg-teal-950/40 border border-teal-900 text-teal-300 p-3 rounded-lg text-xs text-center space-y-1 mb-4 shrink-0">
+                <p className="font-bold">📅 RUTA: {cronoData.fechaConsultada}</p>
+                <p className="opacity-95 text-slate-300 text-center">
+                  <span className="font-semibold text-slate-100">Salida de Bodega:</span>{' '}
+                  <span className={cronoData.inicio.includes('Pendiente') ? 'text-teal-400 italic font-medium' : 'text-emerald-400 font-bold'}>
+                    {cronoData.inicio}
+                  </span>
+                </p>
+              </div>
 
-            <div className="relative border-l border-slate-800 pl-4 ml-2.5 space-y-4">
-              {cronoData.ruta.map((p: any, i: number) => (
-                <div key={i} className="relative">
-                  <span className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${
-                    p.realizado ? 'bg-rose-500 border-slate-900' :
-                    p.enRuta ? 'bg-emerald-500 border-slate-900' :
-                    'bg-amber-500 border-slate-900'
-                  }`} />
-                  
-                  <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-500 font-bold">{p.tipo} #{p.id}</span>
-                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
-                        p.realizado ? 'bg-rose-950/40 text-rose-400 border border-rose-950' :
-                        p.enRuta ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' :
-                        'bg-amber-950 text-amber-400 border border-amber-900'
-                      }`}>
-                        {p.realizado ? 'FINALIZADO' : p.enRuta ? 'EN RUTA' : 'PROGRAMADO'}
-                      </span>
-                    </div>
-
-                    <p className="font-bold mt-1 text-slate-200">{p.destino}</p>
-                    <p className="text-[11px] text-slate-500 truncate mt-0.5">{p.direccion}</p>
+              <div className="relative border-l border-slate-800 pl-4 ml-2.5 space-y-4">
+                {cronoData.ruta.map((p: any, i: number) => (
+                  <div key={i} className="relative">
+                    <span className={`absolute -left-[23px] top-1 w-3 h-3 rounded-full border-2 ${
+                      p.realizado ? 'bg-rose-500 border-slate-900' :
+                      p.enRuta ? 'bg-emerald-500 border-slate-900' :
+                      'bg-amber-500 border-slate-900'
+                    }`} />
                     
-                    <p className={`text-[11px] font-extrabold mt-2 flex items-center gap-1 ${
-                      p.realizado ? 'text-rose-400' : p.enRuta ? 'text-emerald-400' : 'text-amber-405'
-                    }`}>
-                      🕒 {p.ventana}
-                    </p>
+                    <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-slate-500 font-bold">{p.tipo} #{p.id}</span>
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                          p.realizado ? 'bg-rose-950/40 text-rose-400 border border-rose-950' :
+                          p.enRuta ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' :
+                          'bg-amber-950 text-amber-400 border border-amber-900'
+                        }`}>
+                          {p.realizado ? 'FINALIZADO' : p.enRuta ? 'EN RUTA' : 'PROGRAMADO'}
+                        </span>
+                      </div>
+
+                      <p className="font-bold mt-1 text-slate-200">{p.destino}</p>
+                      <p className="text-[11px] text-slate-500 truncate mt-0.5">{p.direccion}</p>
+                      
+                      <p className={`text-[11px] font-extrabold mt-2 flex items-center gap-1 ${
+                        p.realizado ? 'text-rose-400' : p.enRuta ? 'text-emerald-400' : 'text-amber-405'
+                      }`}>
+                        🕒 {p.ventana}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -1146,8 +1160,11 @@ export const Logistica: React.FC = () => {
 
       {/* CATALOG DIRECTORY CRUD INNER DRAWER / INTERACTIVE POPUP */}
       {activeCatalog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[85vh]">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) { setActiveCatalog(null); setEditingItemIdx(null); } }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[85vh] my-auto cursor-default">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4 shrink-0">
               <h3 className="font-bold text-slate-100 text-lg uppercase tracking-wide flex items-center gap-1.5">
                 ⚙️ Catálogos: {activeCatalog}
