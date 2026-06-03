@@ -740,10 +740,20 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const nuevo = i + 1;
       if (x.hoja === 'ENTREGAS') {
         const pIdx = updatedPedidos.findIndex(p => p.ticket === x.id);
-        if (pIdx >= 0) updatedPedidos[pIdx].orden = nuevo;
+        if (pIdx >= 0) {
+          updatedPedidos[pIdx] = {
+            ...updatedPedidos[pIdx],
+            orden: nuevo
+          };
+        }
       } else {
         const rIdx = updatedRecs.findIndex(r => r.id === x.id);
-        if (rIdx >= 0) updatedRecs[rIdx].orden = nuevo;
+        if (rIdx >= 0) {
+          updatedRecs[rIdx] = {
+            ...updatedRecs[rIdx],
+            orden: nuevo
+          };
+        }
       }
     });
 
@@ -793,19 +803,39 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const nuevo = i + 1;
       if (x.hoja === 'ENTREGAS') {
         const pIdx = updatedPedidos.findIndex(p => p.ticket === x.id);
-        if (pIdx >= 0) updatedPedidos[pIdx].orden = nuevo;
+        if (pIdx >= 0) {
+          updatedPedidos[pIdx] = {
+            ...updatedPedidos[pIdx],
+            orden: nuevo
+          };
+        }
       } else {
         const rIdx = updatedRecs.findIndex(r => r.id === x.id);
-        if (rIdx >= 0) updatedRecs[rIdx].orden = nuevo;
+        if (rIdx >= 0) {
+          updatedRecs[rIdx] = {
+            ...updatedRecs[rIdx],
+            orden: nuevo
+          };
+        }
       }
     });
 
     if (hojaActual === 'ENTREGAS') {
       const pIdx = updatedPedidos.findIndex(p => p.ticket === idActual);
-      if (pIdx >= 0) updatedPedidos[pIdx].orden = null;
+      if (pIdx >= 0) {
+        updatedPedidos[pIdx] = {
+          ...updatedPedidos[pIdx],
+          orden: null
+        };
+      }
     } else {
       const rIdx = updatedRecs.findIndex(r => r.id === idActual);
-      if (rIdx >= 0) updatedRecs[rIdx].orden = null;
+      if (rIdx >= 0) {
+        updatedRecs[rIdx] = {
+          ...updatedRecs[rIdx],
+          orden: null
+        };
+      }
     }
 
     setPedidos(updatedPedidos);
@@ -938,10 +968,20 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const nuevoSec = index + 1;
           if (x.hoja === 'ENTREGAS') {
             const pIdx = updatedPedidos.findIndex(item => item.ticket === x.id);
-            if (pIdx >= 0) updatedPedidos[pIdx].orden = nuevoSec;
+            if (pIdx >= 0) {
+              updatedPedidos[pIdx] = {
+                ...updatedPedidos[pIdx],
+                orden: nuevoSec
+              };
+            }
           } else {
             const rIdx = updatedRecs.findIndex(item => item.id === x.id);
-            if (rIdx >= 0) updatedRecs[rIdx].orden = nuevoSec;
+            if (rIdx >= 0) {
+              updatedRecs[rIdx] = {
+                ...updatedRecs[rIdx],
+                orden: nuevoSec
+              };
+            }
           }
         });
       }
@@ -1008,10 +1048,20 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             const nuevoSec = index + 1;
             if (x.hoja === 'ENTREGAS') {
               const pIdx = updatedPedidos.findIndex(item => item.ticket === x.id);
-              if (pIdx >= 0) updatedPedidos[pIdx].orden = nuevoSec;
+              if (pIdx >= 0) {
+                updatedPedidos[pIdx] = {
+                  ...updatedPedidos[pIdx],
+                  orden: nuevoSec
+                };
+              }
             } else {
               const rIdx = updatedRecs.findIndex(item => item.id === x.id);
-              if (rIdx >= 0) updatedRecs[rIdx].orden = nuevoSec;
+              if (rIdx >= 0) {
+                updatedRecs[rIdx] = {
+                  ...updatedRecs[rIdx],
+                  orden: nuevoSec
+                };
+              }
             }
           });
         }
