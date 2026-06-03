@@ -196,7 +196,14 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
 
     const isEntrega = task.tipo === 'Entrega';
     if (isEntrega && !receptor.trim()) {
-      alert('Debe ingresar el nombre de la persona que recibe el material');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Atención',
+        text: 'Debe ingresar el nombre de la persona que recibe el material de forma obligatoria.',
+        background: '#0d1b2a',
+        color: '#fff',
+        confirmButtonColor: '#eab308'
+      });
       return;
     }
 
@@ -410,7 +417,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                   {enRuta ? (
                     <button 
                       onClick={() => handleOpenFinalizar(t)}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest transition shadow shadow-emerald-950 cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full bg-amber-600 hover:bg-amber-550 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest transition shadow shadow-amber-950 cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <CheckCircle size={15} />
                       Finalizar {esEntrega ? 'Entrega' : 'Recolección'}
@@ -534,7 +541,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
               <div className="pt-2 border-t border-slate-800">
                 <button 
                   onClick={handleCompleteTask}
-                  className="w-full bg-emerald-600 hover:bg-emerald-555 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest shadow transition cursor-pointer"
+                  className="w-full bg-rose-600 hover:bg-rose-500 text-white font-black py-3 rounded-lg text-xs uppercase tracking-widest shadow shadow-rose-950 transition cursor-pointer"
                 >
                   Confirmar Firma de Conclusión ✔️
                 </button>
