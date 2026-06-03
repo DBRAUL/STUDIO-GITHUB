@@ -380,7 +380,7 @@ export const Compras: React.FC = () => {
                         <span className="font-bold">🚚 Chofer: {r.chofer}</span>
                         {r.fechaReal && (
                           <span className="bg-amber-950 border border-amber-900 rounded px-1.5 py-0.5 text-slate-100">
-                            F. Real: {formatedDisplayDate(r.fechaReal)}
+                            Recol.: {formatedDisplayDate(r.fechaReal)}
                           </span>
                         )}
                       </div>
