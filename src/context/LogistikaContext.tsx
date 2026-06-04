@@ -1234,6 +1234,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setRecolecciones(updatedRecs);
 
       // Perform selective Firestore updates to minimize database I/O and prevent race condition locks
+      const batch = writeBatch(db);
+      let batchHasChanges = false;
+
       updatedPedidos.forEach(x => {
         const orig = pedidos.find(o => o.ticket === x.ticket);
         const hasChanges = !orig || 
@@ -1244,7 +1247,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           orig.obsLogistica !== x.obsLogistica;
         
         if (hasChanges) {
-          setDoc(doc(db, 'pedidos', x.ticket), x).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${x.ticket}`));
+          batch.set(doc(db, 'pedidos', x.ticket), x);
+          batchHasChanges = true;
         }
       });
 
@@ -1262,9 +1266,14 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           orig.lng !== x.lng;
 
         if (hasChanges) {
-          setDoc(doc(db, 'recolecciones', x.id), x).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${x.id}`));
+          batch.set(doc(db, 'recolecciones', x.id), x);
+          batchHasChanges = true;
         }
       });
+
+      if (batchHasChanges) {
+        batch.commit().catch(e => console.error('Error committing order change batch:', e));
+      }
 
       return { ok: true, ordenFinal: ordenFinal };
     } catch (e: any) {
@@ -1589,8 +1598,22 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     ruta.forEach(item => {
       const logEntry = logs.find(l => l.ticketId === item.id && l.chofer?.trim().toUpperCase() === nombreChofer.trim().toUpperCase());
-      let tieneHoraInicio = !!logEntry?.horaInicio;
-      let tieneHoraFin = !!logEntry?.horaFin;
+      
+      const estatusUpper = (item.estatus || '').toUpperCase();
+      let tieneHoraInicio = false;
+      let tieneHoraFin = false;
+
+      if (estatusUpper === 'EN RUTA') {
+        tieneHoraInicio = true;
+        tieneHoraFin = false;
+      } else if (estatusUpper === 'FINALIZADO' || estatusUpper === 'RECOLECTADO') {
+        tieneHoraInicio = true;
+        tieneHoraFin = true;
+      } else {
+        tieneHoraInicio = false;
+        tieneHoraFin = false;
+      }
+
       let horaInicioVal = logEntry?.horaInicio ? new Date(logEntry.horaInicio) : null;
       let horaFinVal = logEntry?.horaFin ? new Date(logEntry.horaFin) : null;
 
@@ -1604,7 +1627,27 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         horaInicioVal = now;
       }
 
-      if (tieneHoraFin && horaFinVal) {
+      if (tieneHoraFin) {
+        let displayHoraFin = '';
+        if (horaFinVal) {
+          displayHoraFin = horaFinVal.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        } else if (item.fechaFinalizado) {
+          try {
+            const dateParts = item.fechaFinalizado.split(' ');
+            const validDateStr = dateParts[0] + 'T' + (dateParts[1] || '12:00:00');
+            const parsed = new Date(validDateStr);
+            if (!isNaN(parsed.getTime())) {
+              horaFinVal = parsed;
+              displayHoraFin = parsed.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            }
+          } catch { }
+        }
+
+        if (!displayHoraFin) {
+          horaFinVal = now;
+          displayHoraFin = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
         cronograma.push({
           id: item.id,
           tipo: item.tipo,
@@ -1612,13 +1655,12 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           direccion: item.direccion,
           realizado: true,
           enRuta: false,
-          ventana: "FINALIZADO: " + horaFinVal.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+          ventana: "FINALIZADO: " + displayHoraFin
         });
-        // The driver leaves immediately after finalising the delivery download. 
-        // No extra TIEMPO_DESCARGA is added to currTime because the task is already finalized.
         currTime = horaFinVal;
-      } else if (tieneHoraInicio && horaInicioVal) {
-        currTime = horaInicioVal;
+      } else if (tieneHoraInicio && (horaInicioVal || item.id === ticketStartingNow)) {
+        const activeInicio = horaInicioVal || now;
+        currTime = activeInicio;
         const minutosViaje = calcularMinutosViaje(lastLat, lastLng, destLat, destLng, currTime);
         const llegada = new Date(currTime.getTime() + minutosViaje * 60000);
         const ventanaFin = new Date(llegada.getTime() + MARGEN_VENTANA * 60000);
@@ -1684,7 +1726,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           orden: p.orden || 99,
           lat: p.lat,
           lng: p.lng,
-          tienda: p.tienda
+          tienda: p.tienda,
+          estatus: p.estatus,
+          fechaFinalizado: p.fechaFinalizado
         });
       }
     });
@@ -1701,7 +1745,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           orden: r.orden || 99,
           lat: r.lat,
           lng: r.lng,
-          tienda: ''
+          tienda: '',
+          estatus: r.estatus,
+          fechaFinalizado: r.fechaFinalizado
         });
       }
     });
