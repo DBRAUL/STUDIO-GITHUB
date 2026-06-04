@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig, LogRuta, HistorialEntrega, HistorialRecoleccion } from '../types';
 import { db } from '../lib/firebase';
 import { 
@@ -375,6 +375,118 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const saved = localStorage.getItem('logistika_offline_queue');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Keep values updated in a ref to avoid resetting the hourly timer on state changes
+  const autoArchiveStateRef = useRef({ pedidos, recolecciones, logs });
+  useEffect(() => {
+    autoArchiveStateRef.current = { pedidos, recolecciones, logs };
+  }, [pedidos, recolecciones, logs]);
+
+  const checarYArchivarAutomatico = () => {
+    const { pedidos: currentPedidos, recolecciones: currentRecs, logs: currentLogs } = autoArchiveStateRef.current;
+    const ahoraStr = getMexicoCityDateTimeStr();
+    const ahoraMs = new Date(ahoraStr.replace(' ', 'T')).getTime();
+    
+    const finalizadosPedidos = currentPedidos.filter(p => p.estatus === 'FINALIZADO');
+    const finalizadosRecs = currentRecs.filter(r => r.estatus === 'FINALIZADO' || r.estatus === 'RECOLECTADO');
+
+    let countP = 0;
+    let countR = 0;
+
+    finalizadosPedidos.forEach(p => {
+      let finalMs: number | null = null;
+      if (p.fechaFinalizado) {
+        finalMs = new Date(p.fechaFinalizado.replace(' ', 'T')).getTime();
+      } else {
+        const log = currentLogs.find(l => l.ticketId === p.ticket && l.horaFin);
+        if (log && log.horaFin) {
+          finalMs = new Date(log.horaFin.replace(' ', 'T')).getTime();
+        } else if (p.fecha) {
+          const parsable = p.fecha.includes(' ') ? p.fecha.replace(' ', 'T') : `${p.fecha}T12:00:00`;
+          const ts = Date.parse(parsable);
+          if (!isNaN(ts)) finalMs = ts;
+        }
+      }
+
+      if (finalMs) {
+        const diffHours = (ahoraMs - finalMs) / (1000 * 60 * 60);
+        if (diffHours >= 12) {
+          countP++;
+          const archivedItem = {
+            ...p,
+            fechaFinalizado: p.fechaFinalizado || getMexicoCityDateTimeStr(new Date(finalMs)),
+            fechaArchivado: ahoraStr
+          };
+          setDoc(doc(db, 'historial_entregas', p.ticket), archivedItem)
+            .then(() => {
+              deleteDoc(doc(db, 'pedidos', p.ticket));
+            })
+            .catch(e => handleFirestoreError(e, OperationType.WRITE, `historial_entregas/${p.ticket}`));
+        }
+      }
+    });
+
+    finalizadosRecs.forEach(r => {
+      let finalMs: number | null = null;
+      if (r.fechaFinalizado) {
+        finalMs = new Date(r.fechaFinalizado.replace(' ', 'T')).getTime();
+      } else {
+        const log = currentLogs.find(l => l.ticketId === r.id && l.horaFin);
+        if (log && log.horaFin) {
+          finalMs = new Date(log.horaFin.replace(' ', 'T')).getTime();
+        } else if (r.fechaReal) {
+          const ts = Date.parse(`${r.fechaReal}T12:00:00`);
+          if (!isNaN(ts)) finalMs = ts;
+        } else if (r.fechaAlta) {
+          const parsable = r.fechaAlta.includes(' ') ? r.fechaAlta.replace(' ', 'T') : `${r.fechaAlta}T12:00:00`;
+          const ts = Date.parse(parsable);
+          if (!isNaN(ts)) finalMs = ts;
+        }
+      }
+
+      if (finalMs) {
+        const diffHours = (ahoraMs - finalMs) / (1000 * 60 * 60);
+        if (diffHours >= 12) {
+          countR++;
+          const archivedItem = {
+            ...r,
+            fechaFinalizado: r.fechaFinalizado || getMexicoCityDateTimeStr(new Date(finalMs)),
+            fechaArchivado: ahoraStr
+          };
+          setDoc(doc(db, 'historial_recolecciones', r.id), archivedItem)
+            .then(() => {
+              deleteDoc(doc(db, 'recolecciones', r.id));
+            })
+            .catch(e => handleFirestoreError(e, OperationType.WRITE, `historial_recolecciones/${r.id}`));
+        }
+      }
+    });
+
+    if (countP > 0 || countR > 0) {
+      console.log(`[Auto-Archivado] Sincronización automática: ${countP} entregas y ${countR} recolecciones de más de 12 horas archivadas.`);
+    }
+  };
+
+  const hasCheckedAutoRef = useRef(false);
+  useEffect(() => {
+    // Wait until data loads initially to check
+    if (pedidos.length > 0 || recolecciones.length > 0) {
+      if (!hasCheckedAutoRef.current) {
+        hasCheckedAutoRef.current = true;
+        const tid = setTimeout(() => {
+          checarYArchivarAutomatico();
+        }, 5000);
+        return () => clearTimeout(tid);
+      }
+    }
+  }, [pedidos, recolecciones]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      checarYArchivarAutomatico();
+    }, 60 * 60 * 1000); // scan every hour
+    return () => clearInterval(intervalId);
+  }, []);
 
   // 1. Unified Real-Time listeners subscribing to Firestore
   useEffect(() => {
@@ -1214,6 +1326,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               estatus: d.nuevoEstatus.toUpperCase() as any,
               receptor: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO') ? d.receptor?.toUpperCase() : (currentData.receptor || '')
             };
+            if (d.nuevoEstatus.toUpperCase() === 'FINALIZADO') {
+              updateObj.fechaFinalizado = ahora;
+            }
             if (d.fotos && d.fotos.length > 0) {
               updateObj.fotos = d.fotos;
             }
@@ -1230,6 +1345,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               estatus: d.nuevoEstatus.toUpperCase() as any,
               fechaReal: (d.nuevoEstatus.toUpperCase() === 'FINALIZADO' || d.nuevoEstatus.toUpperCase() === 'RECOLECTADO') ? ahora.split(' ')[0] : (currentData.fechaReal || '')
             };
+            if (d.nuevoEstatus.toUpperCase() === 'FINALIZADO' || d.nuevoEstatus.toUpperCase() === 'RECOLECTADO') {
+              updateObj.fechaFinalizado = ahora;
+            }
             if (d.fotos && d.fotos.length > 0) {
               updateObj.fotos = d.fotos;
             }
@@ -1892,6 +2010,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     finalizadosPedidos.forEach(p => {
       const archivedItem = {
         ...p,
+        fechaFinalizado: p.fechaFinalizado || ahoraStr,
         fechaArchivado: ahoraStr
       };
       setDoc(doc(db, 'historial_entregas', p.ticket), archivedItem)
@@ -1904,6 +2023,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     finalizadosRecs.forEach(r => {
       const archivedItem = {
         ...r,
+        fechaFinalizado: r.fechaFinalizado || ahoraStr,
         fechaArchivado: ahoraStr
       };
       setDoc(doc(db, 'historial_recolecciones', r.id), archivedItem)

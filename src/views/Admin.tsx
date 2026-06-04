@@ -62,6 +62,9 @@ export const Admin: React.FC = () => {
   const [pedModalOpen, setPedModalOpen] = useState(false);
   const [editingPedido, setEditingPedido] = useState<Pedido | null>(null);
   const [cliNombre, setCliNombre] = useState('');
+  
+  // Historial eye/detail select modal
+  const [selectedHistItem, setSelectedHistItem] = useState<{ item: any; type: 'Entrega' | 'Recoleccion' } | null>(null);
   const [cliTel, setCliTel] = useState('');
   const [pTipoCarga, setPTipoCarga] = useState('Todo el Ticket');
   const [pCheckTienda, setPCheckTienda] = useState(false);
@@ -779,13 +782,20 @@ export const Admin: React.FC = () => {
               ) : (
                 <>
                   {historialEntregas.filter(h => h.ticket.toLowerCase().includes(buscarHist.toLowerCase()) || h.cliente.toLowerCase().includes(buscarHist.toLowerCase())).map(h => (
-                    <div key={h.ticket} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+                    <div 
+                      key={h.ticket} 
+                      onClick={() => setSelectedHistItem({ item: h, type: 'Entrega' })}
+                      className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs hover:bg-slate-800/40 cursor-pointer transition"
+                    >
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-200">📦 ENTREGA #{h.ticket}</span>
                           <span className="bg-indigo-950 text-indigo-400 border border-indigo-900 px-2 py-0.5 rounded text-[9px] uppercase font-bold">{h.tienda}</span>
                         </div>
-                        <p className="font-semibold text-slate-300 mt-1">Cliente: {h.cliente}</p>
+                        <p className="font-semibold text-slate-300 mt-1 flex items-center gap-1.5">
+                          Cliente: {h.cliente}
+                          <span className="text-[10px] text-teal-400 bg-teal-950/40 border border-teal-900 px-1 py-0.2 rounded font-mono font-medium">Ver detalles 👁️</span>
+                        </p>
                         <p className="text-slate-400 opacity-90 text-[10px] truncate max-w-sm">Dir: {h.dir}</p>
                       </div>
 
@@ -797,13 +807,20 @@ export const Admin: React.FC = () => {
                   ))}
 
                   {historialRecolecciones.filter(h => h.id.toLowerCase().includes(buscarHist.toLowerCase()) || h.proveedor.toLowerCase().includes(buscarHist.toLowerCase())).map(h => (
-                    <div key={h.id} className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+                    <div 
+                      key={h.id} 
+                      onClick={() => setSelectedHistItem({ item: h, type: 'Recoleccion' })}
+                      className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs hover:bg-slate-800/40 cursor-pointer transition"
+                    >
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-amber-500">🏭 RECOLECCION #{h.id}</span>
                           <span className="bg-teal-950 text-teal-400 border border-teal-900 px-2.5 py-0.5 rounded text-[9px] uppercase font-bold">{h.solicitante}</span>
                         </div>
-                        <p className="font-semibold text-slate-300 mt-1">Proveedor: {h.proveedor}</p>
+                        <p className="font-semibold text-slate-300 mt-1 flex items-center gap-1.5">
+                          Proveedor: {h.proveedor}
+                          <span className="text-[10px] text-teal-400 bg-teal-950/40 border border-teal-900 px-1 py-0.2 rounded font-mono font-medium">Ver detalles 👁️</span>
+                        </p>
                         <p className="text-slate-400 opacity-90 text-[10px] truncate max-w-sm">Dir: {h.direccion}</p>
                       </div>
 
@@ -1243,6 +1260,225 @@ export const Admin: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* HISTORIAL DETAIL EYE MODAL */}
+      {selectedHistItem && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedHistItem(null); }}
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className={`text-[11px] font-black tracking-widest px-2.5 py-0.5 rounded-full uppercase ${selectedHistItem.type === 'Entrega' ? 'bg-indigo-950 text-indigo-400 border border-indigo-900' : 'bg-teal-950 text-teal-400 border border-teal-900'}`}>
+                  {selectedHistItem.type === 'Entrega' ? 'Entrega Archivada' : 'Recolección Archivada'}
+                </span>
+                <h2 className="text-slate-100 font-bold text-base">
+                  {selectedHistItem.type === 'Entrega' ? `#${selectedHistItem.item.ticket}` : `#${selectedHistItem.item.id}`}
+                </h2>
+              </div>
+              <button onClick={() => setSelectedHistItem(null)} className="text-slate-400 hover:text-slate-100"><X size={20} /></button>
+            </div>
+
+            <div className="p-6 space-y-6 overflow-y-auto flex-grow text-xs text-slate-350">
+              {/* General Metadata Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-950/40 border border-slate-850 p-4 rounded-xl">
+                <div>
+                  <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">Fecha Alta</span>
+                  <span className="text-xs text-slate-350 font-mono">{selectedHistItem.type === 'Entrega' ? (selectedHistItem.item.fecha || '—') : (selectedHistItem.item.fechaAlta || '—')}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">Fecha Archivado</span>
+                  <span className="text-xs text-slate-350 font-mono">{selectedHistItem.item.fechaArchivado || '—'}</span>
+                </div>
+                <div>
+                  <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">Chofer Finalizador</span>
+                  <span className="text-xs text-slate-200 font-bold">{selectedHistItem.item.chofer || '—'}</span>
+                </div>
+              </div>
+
+              {/* Specific Content */}
+              {selectedHistItem.type === 'Entrega' ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Cliente</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 font-medium">{selectedHistItem.item.cliente}</p>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Teléfono</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 font-mono">{selectedHistItem.item.tel || '—'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Tienda / Sucursal</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100">{selectedHistItem.item.tienda}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Dirección de Entrega</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 whitespace-pre-wrap leading-relaxed">{selectedHistItem.item.dir}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Referencias</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 leading-relaxed">{selectedHistItem.item.ref || '—'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Tipo de Carga</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100">{selectedHistItem.item.tipo || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Persona que Recibió</span>
+                      <p className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-lg text-xs text-emerald-400 font-bold font-mono">
+                        👤 {selectedHistItem.item.receptor || 'No especificado (Se marcó como Concluido)'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Observaciones Ventas</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-350 italic">{selectedHistItem.item.obs || '—'}</p>
+                  </div>
+
+                  {(selectedHistItem.item.comprasObs || selectedHistItem.item.comprasUbic) && (
+                    <div className="bg-slate-950/30 border border-slate-850 p-4 rounded-xl space-y-3">
+                      <span className="block text-[10px] uppercase font-bold text-amber-500 tracking-wider">Información de Compras</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <span className="block text-[9px] uppercase font-semibold text-slate-400 mb-0.5">Ubicación Compra</span>
+                          <p className="text-xs text-slate-200">{selectedHistItem.item.comprasUbic || '—'}</p>
+                        </div>
+                        <div>
+                          <span className="block text-[9px] uppercase font-semibold text-slate-400 mb-0.5">Observaciones Compra</span>
+                          <p className="text-xs text-slate-200 italic">{selectedHistItem.item.comprasObs || '—'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedHistItem.item.obsLogistica && (
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Observaciones Logística</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100">{selectedHistItem.item.obsLogistica}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Proveedor</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 font-medium">{selectedHistItem.item.proveedor}</p>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Solicitante</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 font-mono">{selectedHistItem.item.solicitante || '—'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Material Recolectado</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 font-semibold">{selectedHistItem.item.material}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Dirección de Recolección</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 whitespace-pre-wrap leading-relaxed">{selectedHistItem.item.direccion}</p>
+                  </div>
+
+                  <div>
+                    <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Referencias de Ubicación</span>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 leading-relaxed">{selectedHistItem.item.referencias || '—'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Fecha Disponible</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 font-mono">{selectedHistItem.item.fechaDisponible || '—'}</p>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Fecha Recolección Real</span>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-emerald-400 font-bold font-mono">📅 {selectedHistItem.item.fechaReal || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Photos Gallery */}
+              {(((selectedHistItem.item.fotos && selectedHistItem.item.fotos.length > 0) || selectedHistItem.item.fotoUrl)) ? (
+                <div className="space-y-3 pt-2">
+                  <span className="block text-[11px] uppercase font-black text-rose-450 tracking-wider flex items-center gap-1.5">
+                    <Camera size={14} /> Evidencias Fotográficas
+                  </span>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950/20 border border-slate-850 p-4 rounded-xl">
+                    {/* Single legacy photo */}
+                    {selectedHistItem.item.fotoUrl && (
+                      <div className="flex flex-col items-center bg-slate-950 rounded-lg p-2 border border-slate-800">
+                        <img 
+                          src={selectedHistItem.item.fotoUrl} 
+                          alt="Evidencia principal" 
+                          referrerPolicy="no-referrer"
+                          className="rounded object-cover h-32 w-full hover:scale-105 transition cursor-pointer"
+                          onClick={() => {
+                            Swal.fire({
+                              imageUrl: selectedHistItem.item.fotoUrl,
+                              imageAlt: 'Evidencia',
+                              background: '#0d1b2a',
+                              confirmButtonColor: '#14b8a6',
+                              confirmButtonText: 'Cerrar'
+                            });
+                          }}
+                        />
+                        <span className="text-[8px] text-slate-500 mt-1 font-mono uppercase">Ticket Foto</span>
+                      </div>
+                    )}
+
+                    {/* Array of photos */}
+                    {selectedHistItem.item.fotos && selectedHistItem.item.fotos.map((img: string, idx: number) => (
+                      <div key={idx} className="flex flex-col items-center bg-slate-950 rounded-lg p-2 border border-slate-800">
+                        <img 
+                          src={img} 
+                          alt={`Evidencia ${idx + 1}`} 
+                          referrerPolicy="no-referrer"
+                          className="rounded object-cover h-32 w-full hover:scale-105 transition cursor-pointer"
+                          onClick={() => {
+                            Swal.fire({
+                              imageUrl: img,
+                              imageAlt: `Evidencia ${idx + 1}`,
+                              background: '#0d1b2a',
+                              confirmButtonColor: '#14b8a6',
+                              confirmButtonText: 'Cerrar'
+                            });
+                          }}
+                        />
+                        <span className="text-[8px] text-slate-500 mt-1 font-mono uppercase">Evidencia {idx + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4 bg-slate-950/20 border border-slate-850 rounded-xl text-xs text-slate-500">
+                  📷 No hay fotos de evidencia asociadas a este registro en el historial.
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-950/80 border-t border-slate-850 flex justify-end shrink-0">
+              <button 
+                onClick={() => setSelectedHistItem(null)} 
+                className="bg-slate-850 hover:bg-slate-800 text-slate-200 border border-slate-755 font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition cursor-pointer"
+              >
+                Cerrar Consulta
+              </button>
+            </div>
           </div>
         </div>
       )}
