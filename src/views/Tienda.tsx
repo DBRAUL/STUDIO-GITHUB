@@ -142,24 +142,64 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
     setMsgError('');
 
     if (!ticketNum.trim()) {
-      setMsgError('ID de Ticket es obligatorio');
+      const err = 'ID de Ticket es obligatorio';
+      setMsgError(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Falta ID de Ticket',
+        text: err,
+        background: '#0d1b2a',
+        color: '#fff',
+        confirmButtonColor: '#0ea5e9',
+        confirmButtonText: 'Entendido'
+      });
       return;
     }
 
     if (!checkTienda && !direccionPegada.trim()) {
-      setMsgError('Debe ingresar una dirección o activar "Recoger en tienda"');
+      const err = 'Debe ingresar una dirección o activar "Recoger en tienda"';
+      setMsgError(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Dirección Requerida',
+        text: err,
+        background: '#0d1b2a',
+        color: '#fff',
+        confirmButtonColor: '#0ea5e9',
+        confirmButtonText: 'Entendido'
+      });
       return;
     }
 
     if (!checkTienda && clienteTel.length !== 10) {
-      setMsgError('El teléfono celular del cliente debe tener 10 dígitos');
+      const err = 'El teléfono celular del cliente debe tener 10 dígitos';
+      setMsgError(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Teléfono Inválido',
+        text: err,
+        background: '#0d1b2a',
+        color: '#fff',
+        confirmButtonColor: '#0ea5e9',
+        confirmButtonText: 'Entendido'
+      });
       return;
     }
 
     const ticketCompleto = `${activeSiglas}${ticketNum.trim().toUpperCase()}`;
 
     if (!esEdicion && verificarTicketExistente(tiendaSelec, ticketCompleto)) {
-      setMsgError('Este ID de Ticket ya existe para esta tienda.');
+      const err = 'Este ID de Ticket ya existe para esta tienda.';
+      setMsgError(err);
+      Swal.fire({
+        icon: 'error',
+        title: '¡Ticket Duplicado!',
+        text: `El ticket ${ticketCompleto} ya está registrado en esta tienda. Por favor verifique el ID del ticket.`,
+        background: '#0d1b2a',
+        color: '#fff',
+        confirmButtonColor: '#0ea5e9',
+        confirmButtonText: 'Corregir ID'
+      });
       return;
     }
 
@@ -181,7 +221,17 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
     if (res.success) {
       setModalOpen(false);
     } else {
-      setMsgError(res.error || 'Ocurrió un error inesperado');
+      const err = res.error || 'Ocurrió un error inesperado';
+      setMsgError(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de Guardado',
+        text: err,
+        background: '#0d1b2a',
+        color: '#fff',
+        confirmButtonColor: '#0ea5e9',
+        confirmButtonText: 'Entendido'
+      });
     }
   };
 
