@@ -386,6 +386,44 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     )}
                   </div>
 
+                  {/* Operational driver instructions and logistics/compras fields */}
+                  {(t.obsLogistica || t.comprasObs || t.comprasUbic) && (
+                    <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3.5 space-y-3.5 text-xs">
+                      {t.obsLogistica && (
+                        <div className="space-y-1">
+                          <span className="block text-[10px] uppercase font-extrabold tracking-wider text-teal-400">
+                            📋 Obs. Logística
+                          </span>
+                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-line leading-relaxed">
+                            {t.obsLogistica}
+                          </p>
+                        </div>
+                      )}
+
+                      {t.comprasObs && (
+                        <div className="space-y-1">
+                          <span className="block text-[10px] uppercase font-extrabold tracking-wider text-amber-500">
+                            📝 Notas de Compras
+                          </span>
+                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-line leading-relaxed">
+                            {t.comprasObs}
+                          </p>
+                        </div>
+                      )}
+
+                      {t.comprasUbic && (
+                        <div className="space-y-1">
+                          <span className="block text-[10px] uppercase font-extrabold tracking-wider text-sky-400">
+                            📍 Ubicación de Material
+                          </span>
+                          <p className="text-slate-250 font-mono bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 tracking-wide leading-relaxed">
+                            {t.comprasUbic}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Operational navigation drivers buttons */}
                   <div className="grid grid-cols-2 gap-3 text-center">
                     <a 

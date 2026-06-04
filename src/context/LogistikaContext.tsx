@@ -1307,7 +1307,10 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           estatus: estatus,
           tipo: 'Entrega',
           hoja: 'DB_PEDIDOS',
-          orden: p.orden || 999
+          orden: p.orden || 999,
+          obsLogistica: p.obsLogistica,
+          comprasObs: p.comprasObs,
+          comprasUbic: p.comprasUbic
         });
       }
     });
