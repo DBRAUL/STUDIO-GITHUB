@@ -162,6 +162,11 @@ export const Compras: React.FC = () => {
           >
             <Clipboard size={14} />
             Pedidos de Tiendas
+            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'PEDIDOS' ? 'bg-amber-950/20 text-slate-900' : 'bg-slate-900 text-slate-500'
+            }`}>
+              {pedidos.length}
+            </span>
           </button>
           <button 
             onClick={() => setActiveTab('RECOLECCIONES')}
@@ -171,6 +176,11 @@ export const Compras: React.FC = () => {
           >
             <Truck size={14} />
             Recolecciones
+            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'RECOLECCIONES' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-900 text-slate-500'
+            }`}>
+              {recolecciones.length}
+            </span>
           </button>
         </div>
 

@@ -400,27 +400,42 @@ export const Admin: React.FC = () => {
         <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800/80 w-full sm:w-auto">
           <button 
             onClick={() => { setActiveTab('PEDIDOS'); setFiltroEstatus(null); }}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto ${
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 ${
               activeTab === 'PEDIDOS' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
           >
             Pedidos
+            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'PEDIDOS' ? 'bg-teal-950/50 text-teal-400' : 'bg-slate-900 text-slate-500'
+            }`}>
+              {pedidos.length}
+            </span>
           </button>
           <button 
             onClick={() => { setActiveTab('RECOLECCIONES'); setFiltroEstatus(null); }}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto ${
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 ${
               activeTab === 'RECOLECCIONES' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
           >
             Recolecciones
+            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'RECOLECCIONES' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-400 hover:text-slate-100'
+            }`}>
+              {recolecciones.length}
+            </span>
           </button>
           <button 
             onClick={() => setActiveTab('HISTORIAL')}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto ${
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 ${
               activeTab === 'HISTORIAL' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
           >
             Historial de Archivados
+            <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'HISTORIAL' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-400 hover:text-slate-100'
+            }`}>
+              {historialEntregas.length + historialRecolecciones.length}
+            </span>
           </button>
           <button 
             onClick={() => { setActiveTab('BASE_DATOS'); setFiltroEstatus(null); }}

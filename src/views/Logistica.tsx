@@ -360,6 +360,11 @@ export const Logistica: React.FC = () => {
           >
             <Truck size={14} />
             Entregas
+            <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'ENTREGAS' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+            }`}>
+              {pedidos.length}
+            </span>
           </button>
           <button 
             onClick={() => { setActiveTab('RECOLECCIONES'); setBuscar(''); }}
@@ -369,6 +374,11 @@ export const Logistica: React.FC = () => {
           >
             <Clock size={14} />
             Recolecciones
+            <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full transition-all ${
+              activeTab === 'RECOLECCIONES' ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400'
+            }`}>
+              {recolecciones.length}
+            </span>
           </button>
         </div>
 
