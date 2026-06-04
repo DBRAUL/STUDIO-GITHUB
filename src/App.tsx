@@ -60,11 +60,11 @@ function MainAppContent() {
     e.preventDefault();
 
     if (selectedRole === 'ADMIN') {
-      if (adminPin !== '1234') {
+      if (adminPin !== '1313') {
         Swal.fire({
           icon: 'error',
           title: 'Código Supervisor Inválido',
-          text: 'El PIN de Supervisor es obligatorio e incorrecto (Pruebe con "1234").',
+          text: 'El PIN de Supervisor es obligatorio e incorrecto.',
           background: '#0d1b2a',
           color: '#fff'
         });
@@ -98,7 +98,7 @@ function MainAppContent() {
   const handleLogout = () => {
     Swal.fire({
       title: 'Desasociar Terminal',
-      text: 'Se requiere el PIN de Supervisor (1234) para desbloquear este dispositivo.',
+      text: 'Se requiere el PIN de Supervisor para desbloquear este dispositivo.',
       input: 'password',
       inputPlaceholder: 'Ingrese PIN de Supervisor',
       inputAttributes: {
@@ -112,10 +112,10 @@ function MainAppContent() {
       background: '#0d1b2a',
       color: '#fff',
       preConfirm: (pin) => {
-        if (pin === '1234') {
+        if (pin === '1313') {
           return true;
         } else {
-          Swal.showValidationMessage('PIN incorrecto. Pruebe con "1234"');
+          Swal.showValidationMessage('PIN incorrecto. Ingrese el PIN de supervisor correcto.');
           return false;
         }
       }
@@ -261,7 +261,7 @@ function MainAppContent() {
                     <p className="text-[10px] text-slate-500 mb-2">Se requiere autenticar un PIN de seguridad vigente para usar el módulo de supervisor / catálogos.</p>
                     <input
                       type="password"
-                      placeholder="Ingrese PIN de Seguridad (Prueba: 1234)"
+                      placeholder="Ingrese PIN de Seguridad Autorizado"
                       value={adminPin}
                       onChange={(e) => setAdminPin(e.target.value)}
                       maxLength={6}
@@ -343,11 +343,10 @@ function MainAppContent() {
 
             <button 
               onClick={handleLogout}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-950 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer shadow-sm"
-              title="Cerrar sesión de terminal requiere PIN de Supervisor"
+              className="p-2 bg-slate-800 hover:bg-rose-950/40 text-rose-400 border border-slate-700 hover:border-rose-950 rounded-lg flex items-center justify-center transition-all cursor-pointer shadow-sm"
+              title="Cerrar Sesión (Requiere PIN de Supervisor)"
             >
-              <LogOut size={11} />
-              Cerrar Sesión
+              <LogOut size={14} />
             </button>
           </div>
         </div>
