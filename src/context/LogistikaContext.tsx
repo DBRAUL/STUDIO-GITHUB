@@ -13,7 +13,8 @@ import {
   getDocs, 
   getDoc,
   deleteDoc, 
-  onSnapshot
+  onSnapshot,
+  writeBatch
 } from 'firebase/firestore';
 
 enum OperationType {
@@ -492,33 +493,33 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const unsubPedidos = onSnapshot(collection(db, 'pedidos'), (snap) => {
       const list: Pedido[] = [];
-      snap.forEach(d => list.push(d.data() as Pedido));
+      snap.forEach(d => list.push({ ...d.data() as Pedido, ticket: d.id }));
       setPedidos(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'pedidos'));
 
     const unsubRecs = onSnapshot(collection(db, 'recolecciones'), (snap) => {
       const list: Recoleccion[] = [];
-      snap.forEach(d => list.push(d.data() as Recoleccion));
+      snap.forEach(d => list.push({ ...d.data() as Recoleccion, id: d.id }));
       setRecolecciones(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'recolecciones'));
 
     const unsubChoferes = onSnapshot(collection(db, 'choferes'), (snap) => {
       const list: ChoferConfig[] = [];
-      snap.forEach(d => list.push(d.data() as ChoferConfig));
+      snap.forEach(d => list.push({ ...d.data() as ChoferConfig, id: d.id }));
       list.sort((a, b) => a.id.localeCompare(b.id));
       setChoferes(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'choferes'));
 
     const unsubProveedores = onSnapshot(collection(db, 'proveedores'), (snap) => {
       const list: ProveedorConfig[] = [];
-      snap.forEach(d => list.push(d.data() as ProveedorConfig));
+      snap.forEach(d => list.push({ ...d.data() as ProveedorConfig, nombre: d.id }));
       list.sort((a, b) => a.nombre.localeCompare(b.nombre));
       setProveedores(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'proveedores'));
 
     const unsubTiendas = onSnapshot(collection(db, 'tiendas'), (snap) => {
       const list: TiendaConfig[] = [];
-      snap.forEach(d => list.push(d.data() as TiendaConfig));
+      snap.forEach(d => list.push({ ...d.data() as TiendaConfig, nombre: d.id }));
       list.sort((a, b) => a.nombre.localeCompare(b.nombre));
       setTiendas(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'tiendas'));
@@ -531,13 +532,13 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const unsubHistE = onSnapshot(collection(db, 'historial_entregas'), (snap) => {
       const list: HistorialEntrega[] = [];
-      snap.forEach(d => list.push(d.data() as HistorialEntrega));
+      snap.forEach(d => list.push({ ...d.data() as HistorialEntrega, ticket: d.id }));
       setHistorialEntregas(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'historial_entregas'));
 
     const unsubHistR = onSnapshot(collection(db, 'historial_recolecciones'), (snap) => {
       const list: HistorialRecoleccion[] = [];
-      snap.forEach(d => list.push(d.data() as HistorialRecoleccion));
+      snap.forEach(d => list.push({ ...d.data() as HistorialRecoleccion, id: d.id }));
       setHistorialRecolecciones(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'historial_recolecciones'));
 
@@ -606,23 +607,40 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Firestore update helper for bulk/order mutations
   const syncListsToFirestore = (updatedPedidos: Pedido[], updatedRecs: Recoleccion[]) => {
-    updatedPedidos.forEach(p => {
-      const orig = pedidos.find(x => x.ticket === p.ticket);
-      if (!orig || orig.orden !== p.orden || orig.chofer !== p.chofer || orig.dateenv !== p.dateenv || orig.estatus !== p.estatus) {
-        setDoc(doc(db, 'pedidos', p.ticket), p).catch((e) => console.error(e));
+    try {
+      const batch = writeBatch(db);
+      let hasChanges = false;
+
+      updatedPedidos.forEach(p => {
+        const orig = pedidos.find(x => x.ticket === p.ticket);
+        if (!orig || orig.orden !== p.orden || orig.chofer !== p.chofer || orig.dateenv !== p.dateenv || orig.estatus !== p.estatus) {
+          batch.set(doc(db, 'pedidos', p.ticket), p);
+          hasChanges = true;
+        }
+      });
+
+      updatedRecs.forEach(r => {
+        const orig = recolecciones.find(x => x.id === r.id);
+        if (!orig || orig.orden !== r.orden || orig.chofer !== r.chofer || orig.fechaReal !== r.fechaReal || orig.estatus !== r.estatus || orig.direccion !== r.direccion) {
+          batch.set(doc(db, 'recolecciones', r.id), r);
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges) {
+        batch.commit().catch(e => console.error('Error committing batch:', e));
       }
-    });
-    updatedRecs.forEach(r => {
-      const orig = recolecciones.find(x => x.id === r.id);
-      if (!orig || orig.orden !== r.orden || orig.chofer !== r.chofer || orig.fechaReal !== r.fechaReal || orig.estatus !== r.estatus || orig.direccion !== r.direccion) {
-        setDoc(doc(db, 'recolecciones', r.id), r).catch((e) => console.error(e));
-      }
-    });
+    } catch (e) {
+      console.error('Error during writeBatch execution:', e);
+    }
   };
 
   const verificarTicketExistente = (tienda: string, ticket: string): boolean => {
     const ticketBuscado = ticket.toString().trim().toUpperCase();
-    return pedidos.some(p => p.ticket.toUpperCase() === ticketBuscado && p.tienda.toUpperCase() === tienda.toUpperCase().trim());
+    const tiendaBuscada = tienda.toUpperCase().trim();
+    const existeActivo = pedidos.some(p => p.ticket.toUpperCase() === ticketBuscado && p.tienda.toUpperCase() === tiendaBuscada);
+    if (existeActivo) return true;
+    return historialEntregas.some(h => (h.ticket || '').toUpperCase() === ticketBuscado && (h.tienda || '').toUpperCase() === tiendaBuscada);
   };
 
   const guardarPedidoTienda = (datos: Partial<Pedido> & { idTicket: string; esEdicion?: boolean; numInt?: string; entregaEnTienda?: boolean; direccionPegada?: string }): { success: boolean, error?: string } => {
@@ -1671,24 +1689,6 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     });
 
-    // Archived deliveries
-    historialEntregas.forEach(p => {
-      if (p.chofer?.trim().toUpperCase() === choferKey && normalizarFecha(p.dateenv || '') === targetDate) {
-        if (!rutaUnificada.some(x => x.id === p.ticket)) {
-          rutaUnificada.push({
-            id: p.ticket,
-            tipo: 'ENTREGA',
-            destino: p.cliente,
-            direccion: p.dir,
-            orden: p.orden || 99,
-            lat: p.lat,
-            lng: p.lng,
-            tienda: p.tienda
-          });
-        }
-      }
-    });
-
     // Active recolecciones
     recolecciones.forEach(r => {
       const rDate = r.fechaReal || r.fechaDisponible;
@@ -1703,25 +1703,6 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           lng: r.lng,
           tienda: ''
         });
-      }
-    });
-
-    // Archived recolecciones
-    historialRecolecciones.forEach(r => {
-      const rDate = r.fechaReal || r.fechaDisponible;
-      if (r.chofer?.trim().toUpperCase() === choferKey && normalizarFecha(rDate || '') === targetDate) {
-        if (!rutaUnificada.some(x => x.id === r.id)) {
-          rutaUnificada.push({
-            id: r.id,
-            tipo: 'RECOLECCIÓN',
-            destino: r.proveedor,
-            direccion: r.direccion,
-            orden: r.orden || 99,
-            lat: r.lat,
-            lng: r.lng,
-            tienda: ''
-          });
-        }
       }
     });
 
