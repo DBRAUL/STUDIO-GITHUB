@@ -394,7 +394,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                           <span className="block text-[10px] uppercase font-extrabold tracking-wider text-teal-400">
                             📋 Obs. Logística
                           </span>
-                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-line leading-relaxed">
+                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words leading-relaxed">
                             {t.obsLogistica}
                           </p>
                         </div>
@@ -405,7 +405,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                           <span className="block text-[10px] uppercase font-extrabold tracking-wider text-amber-500">
                             📝 Notas de Compras
                           </span>
-                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-line leading-relaxed">
+                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words leading-relaxed">
                             {t.comprasObs}
                           </p>
                         </div>
@@ -416,7 +416,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                           <span className="block text-[10px] uppercase font-extrabold tracking-wider text-sky-400">
                             📍 Ubicación de Material
                           </span>
-                          <p className="text-slate-250 font-mono bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 tracking-wide leading-relaxed">
+                          <p className="text-slate-250 font-mono bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words tracking-wide leading-relaxed">
                             {t.comprasUbic}
                           </p>
                         </div>

@@ -259,7 +259,7 @@ export const Compras: React.FC = () => {
                       {p.obs && (
                         <div className="bg-slate-900/60 p-2.5 rounded text-xs text-slate-300 border border-slate-800/40">
                           <p className="font-bold text-[10px] text-amber-500 uppercase">Obs Tienda:</p>
-                          <p className="mt-0.5">{p.obs}</p>
+                          <p className="mt-0.5 whitespace-pre-wrap break-words">{p.obs}</p>
                         </div>
                       )}
 
@@ -267,10 +267,10 @@ export const Compras: React.FC = () => {
                       {(p.comprasObs || p.comprasUbic) && (
                         <div className="bg-amber-950/10 p-2.5 rounded-lg border border-amber-900/20 text-xs text-slate-300 space-y-1">
                           {p.comprasObs && (
-                            <p><span className="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Nota Compras:</span> {p.comprasObs}</p>
+                            <p><span className="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Nota Compras:</span> <span className="whitespace-pre-wrap break-words block">{p.comprasObs}</span></p>
                           )}
                           {p.comprasUbic && (
-                            <p><span className="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Ubi. material:</span> {p.comprasUbic}</p>
+                            <p><span className="text-[10px] uppercase font-bold text-amber-400 block mb-0.5">Ubi. material:</span> <span className="whitespace-pre-wrap break-words block">{p.comprasUbic}</span></p>
                           )}
                         </div>
                       )}

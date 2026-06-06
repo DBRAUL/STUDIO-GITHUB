@@ -515,7 +515,7 @@ export const Admin: React.FC = () => {
                     </div>
 
                     {p.obs && (
-                      <p className="text-[11px] text-slate-400 bg-slate-900 p-2 rounded border-l border-amber-500 font-medium">
+                      <p className="text-[11px] text-slate-400 bg-slate-900 p-2 rounded border-l border-amber-500 font-medium whitespace-pre-wrap break-words">
                         Obs: {p.obs}
                       </p>
                     )}
@@ -1359,7 +1359,7 @@ export const Admin: React.FC = () => {
 
                   <div>
                     <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Observaciones Ventas</span>
-                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-350 italic">{selectedHistItem.item.obs || '—'}</p>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-350 italic whitespace-pre-wrap break-words">{selectedHistItem.item.obs || '—'}</p>
                   </div>
 
                   {(selectedHistItem.item.comprasObs || selectedHistItem.item.comprasUbic) && (
@@ -1368,11 +1368,11 @@ export const Admin: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <span className="block text-[9px] uppercase font-semibold text-slate-400 mb-0.5">Ubicación Compra</span>
-                          <p className="text-xs text-slate-200">{selectedHistItem.item.comprasUbic || '—'}</p>
+                          <p className="text-xs text-slate-200 whitespace-pre-wrap break-words">{selectedHistItem.item.comprasUbic || '—'}</p>
                         </div>
                         <div>
                           <span className="block text-[9px] uppercase font-semibold text-slate-400 mb-0.5">Observaciones Compra</span>
-                          <p className="text-xs text-slate-200 italic">{selectedHistItem.item.comprasObs || '—'}</p>
+                          <p className="text-xs text-slate-200 italic whitespace-pre-wrap break-words">{selectedHistItem.item.comprasObs || '—'}</p>
                         </div>
                       </div>
                     </div>
@@ -1381,7 +1381,7 @@ export const Admin: React.FC = () => {
                   {selectedHistItem.item.obsLogistica && (
                     <div>
                       <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Observaciones Logística</span>
-                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100">{selectedHistItem.item.obsLogistica}</p>
+                      <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-100 whitespace-pre-wrap break-words">{selectedHistItem.item.obsLogistica}</p>
                     </div>
                   )}
                 </div>

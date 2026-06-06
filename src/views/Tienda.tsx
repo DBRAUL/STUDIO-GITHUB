@@ -363,7 +363,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
                     {p.obs && (
                       <div className="flex gap-1.5 pt-2 text-slate-400 text-[11px]">
                         <MessageSquare size={13} className="text-amber-500 shrink-0 mt-0.5" />
-                        <span>Obs: {p.obs}</span>
+                        <span className="whitespace-pre-wrap break-words">Obs: {p.obs}</span>
                       </div>
                     )}
                   </div>

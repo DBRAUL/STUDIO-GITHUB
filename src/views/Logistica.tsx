@@ -498,15 +498,15 @@ export const Logistica: React.FC = () => {
                     <div className="bg-slate-950/30 border border-slate-850/40 rounded-lg p-2.5 space-y-1.5 text-[11px]">
                       <div className="flex items-start gap-1">
                         <span className="font-bold text-slate-400 shrink-0 w-[110px] uppercase tracking-wider text-[9px]">Obs. Tienda:</span>
-                        <span className="text-slate-300 font-medium break-all">{p.obs || <span className="text-slate-600 italic">Sin observaciones</span>}</span>
+                        <span className="text-slate-300 font-medium whitespace-pre-wrap break-words">{p.obs || <span className="text-slate-600 italic">Sin observaciones</span>}</span>
                       </div>
                       <div className="flex items-start gap-1">
                         <span className="font-bold text-slate-400 shrink-0 w-[110px] uppercase tracking-wider text-[9px]">Notas Compras:</span>
-                        <span className="text-amber-400/90 font-medium break-all">{p.comprasObs || <span className="text-slate-600 italic">Sin notas</span>}</span>
+                        <span className="text-amber-400/90 font-medium whitespace-pre-wrap break-words">{p.comprasObs || <span className="text-slate-600 italic">Sin notas</span>}</span>
                       </div>
                       <div className="flex items-start gap-1">
                         <span className="font-bold text-slate-400 shrink-0 w-[110px] uppercase tracking-wider text-[9px]">Ubic. Material:</span>
-                        <span className="text-teal-400 font-mono font-semibold break-all">{p.comprasUbic || <span className="text-slate-600 italic font-normal">Sin ubicación</span>}</span>
+                        <span className="text-teal-400 font-mono font-semibold whitespace-pre-wrap break-words">{p.comprasUbic || <span className="text-slate-600 italic font-normal">Sin ubicación</span>}</span>
                       </div>
                     </div>
 
@@ -527,7 +527,7 @@ export const Logistica: React.FC = () => {
                     </div>
 
                     {p.obsLogistica && (
-                      <p className="text-[11px] italic text-slate-400 bg-slate-950/20 p-2 border-l-2 border-slate-705">
+                      <p className="text-[11px] italic text-slate-400 bg-slate-950/20 p-2 border-l-2 border-slate-705 whitespace-pre-wrap break-words">
                         💡 {p.obsLogistica}
                       </p>
                     )}
