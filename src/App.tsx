@@ -337,7 +337,12 @@ function MainAppContent() {
             <div className="flex items-center gap-2 text-xs bg-slate-950/60 px-3 py-1.5 rounded-full border border-slate-800">
               <span className="w-2 h-2 bg-teal-400 rounded-full animate-ping"></span>
               <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                {isSandbox ? '🧪 SANDBOX PRUEBAS' : `🛡️ MÓDULO: ${session.role} ${session.name ? '(' + session.name + ')' : ''}`}
+                {isSandbox 
+                  ? '🧪 SANDBOX PRUEBAS' 
+                  : session.role === 'FOTO_TICKET'
+                    ? '📷 FOTO TICKET'
+                    : `🛡️ MÓDULO: ${session.role} ${session.name ? '(' + session.name + ')' : ''}`
+                }
               </span>
             </div>
 
