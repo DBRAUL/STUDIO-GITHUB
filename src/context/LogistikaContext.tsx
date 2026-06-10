@@ -1328,7 +1328,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           orden: p.orden || 999,
           obsLogistica: p.obsLogistica,
           comprasObs: p.comprasObs,
-          comprasUbic: p.comprasUbic
+          comprasUbic: p.comprasUbic,
+          obs: p.obs
         });
       }
     });
