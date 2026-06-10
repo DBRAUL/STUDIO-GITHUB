@@ -6,8 +6,9 @@
 import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate, formatedDisplayDateTime } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
-import { Clipboard, Truck, Search, Plus, MapPin, Eye, FileText, CheckCircle2, MessageCircle, MoreVertical, X } from 'lucide-react';
+import { Clipboard, Truck, Search, Plus, MapPin, Eye, FileText, CheckCircle2, MessageCircle, MoreVertical, X, Upload, Calendar } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { compressBase64Image } from '../lib/imageCompressor';
 
 export const Compras: React.FC = () => {
   const {
@@ -15,7 +16,8 @@ export const Compras: React.FC = () => {
     recolecciones,
     proveedores,
     guardarDictamenCompras,
-    guardarSolicitudDesdeCompras
+    guardarSolicitudDesdeCompras,
+    modificarRecoleccionAdmin
   } = useLogistika();
 
   const [activeTab, setActiveTab] = useState<'PEDIDOS' | 'RECOLECCIONES'>('PEDIDOS');
@@ -37,8 +39,38 @@ export const Compras: React.FC = () => {
   const [refRec, setRefRec] = useState('');
   const [materialRec, setMaterialRec] = useState('');
   const [fechaRec, setFechaRec] = useState('');
+  const [nuevaRecCaptura, setNuevaRecCaptura] = useState('');
+  const [nuevaRecCapturaLoading, setNuevaRecCapturaLoading] = useState(false);
   const [sugProvs, setSugProvs] = useState<any[]>([]);
   const [msgError, setMsgError] = useState('');
+
+  // Editing Recolección state
+  const [editingRec, setEditingRec] = useState<Recoleccion | null>(null);
+  const [editProvNombre, setEditProvNombre] = useState('');
+  const [editDireccionRec, setEditDireccionRec] = useState('');
+  const [editRefRec, setEditRefRec] = useState('');
+  const [editMaterialRec, setEditMaterialRec] = useState('');
+  const [editFechaRec, setEditFechaRec] = useState('');
+  const [editCaptura, setEditCaptura] = useState('');
+  const [editCapturaLoading, setEditCapturaLoading] = useState(false);
+  const [editSugProvs, setEditSugProvs] = useState<any[]>([]);
+
+  const handleEditProvChange = (val: string) => {
+    setEditProvNombre(val);
+    if (val.length > 1) {
+      const match = proveedores.filter(p => p.nombre.toUpperCase().includes(val.toUpperCase()));
+      setEditSugProvs(match);
+    } else {
+      setEditSugProvs([]);
+    }
+  };
+
+  const selectEditProvSug = (prov: any) => {
+    setEditProvNombre(prov.nombre);
+    setEditDireccionRec(prov.direccion);
+    setEditRefRec(prov.referencia || '');
+    setEditSugProvs([]);
+  };
 
   // Filterning logic corresponding to Modulo_Compras.gs
   const filterPedidos = pedidos.filter(p => {
@@ -94,6 +126,17 @@ export const Compras: React.FC = () => {
     }
   };
 
+  const handleOpenEditRec = (r: Recoleccion) => {
+    setEditingRec(r);
+    setEditProvNombre(r.proveedor);
+    setEditDireccionRec(r.direccion);
+    setEditRefRec(r.referencias || '');
+    setEditMaterialRec(r.material);
+    setEditFechaRec(r.fechaDisponible);
+    setEditCaptura(r.captura || '');
+    setEditSugProvs([]);
+  };
+
   const handleOpenNuevaRec = () => {
     setFolioRec('');
     setProvNombre('');
@@ -101,6 +144,7 @@ export const Compras: React.FC = () => {
     setRefRec('');
     setMaterialRec('');
     setFechaRec('');
+    setNuevaRecCaptura('');
     setMsgError('');
     setNuevaRecOpen(true);
   };
@@ -139,7 +183,8 @@ export const Compras: React.FC = () => {
       direccion: direccionRec,
       referencias: refRec,
       material: materialRec,
-      fechaDisponible: fechaRec
+      fechaDisponible: fechaRec,
+      captura: nuevaRecCaptura
     });
 
     if (res.success) {
@@ -395,7 +440,34 @@ export const Compras: React.FC = () => {
                         )}
                       </div>
                     )}
+
+                    {r.captura && r.captura.trim() !== '' && (
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          Swal.fire({
+                            title: `Captura de Pantalla: ${r.id}`,
+                            imageUrl: r.captura,
+                            imageAlt: `Captura ${r.id}`,
+                            background: '#0d1b2a',
+                            color: '#fff',
+                            confirmButtonColor: '#0ea5e9',
+                            confirmButtonText: 'Cerrar'
+                          });
+                        }}
+                        className="w-full text-amber-400 text-[10px] font-bold bg-amber-950/50 border border-amber-900 px-2 py-2 rounded inline-flex items-center justify-center gap-1 cursor-pointer hover:bg-amber-900/60 transition"
+                      >
+                        👁️ VER CAPTURA DE PANTALLA
+                      </button>
+                    )}
                   </div>
+
+                  <button 
+                    onClick={() => handleOpenEditRec(r)}
+                    className="w-full bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-200 hover:text-white font-bold py-2 px-3 rounded-lg text-xs mt-4 transition cursor-pointer"
+                  >
+                    EDITAR RECOLECCIÓN 🛒
+                  </button>
                 </div>
               ))}
             </div>
@@ -606,12 +678,269 @@ export const Compras: React.FC = () => {
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 flex justify-between">
+                  Captura de Pantalla
+                  {nuevaRecCapturaLoading && <span className="text-[10px] text-amber-400 font-bold">Procesando...</span>}
+                </label>
+                
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    {nuevaRecCaptura ? (
+                      <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 leading-normal truncate">
+                        ✔ CAPTURA LISTA ({Math.round(nuevaRecCaptura.length / 1024)} KB)
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-[11px] leading-normal block">
+                        Sube un screenshot del material, factura, etc.
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    type="button"
+                    onClick={() => document.getElementById('comprasScreenshotUpload')?.click()}
+                    className="bg-amber-950/40 hover:bg-amber-900/40 border border-amber-900/50 hover:border-amber-800 text-amber-300 font-bold px-3 py-2 rounded-lg text-xs cursor-pointer tracking-wide uppercase transition inline-flex items-center gap-1 shadow"
+                  >
+                    <Upload size={13} />
+                    {nuevaRecCaptura ? 'Cambiar' : 'Subir'}
+                  </button>
+                  
+                  <input 
+                    type="file" 
+                    id="comprasScreenshotUpload" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setNuevaRecCapturaLoading(true);
+                        try {
+                          const base64 = await compressBase64Image(file);
+                          setNuevaRecCaptura(base64);
+                        } catch (err) {
+                          console.error(err);
+                          Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Compresión',
+                            text: 'No se pudo procesar la imagen elegida.',
+                            background: '#0d1b2a',
+                            color: '#fff'
+                          });
+                        } finally {
+                          setNuevaRecCapturaLoading(false);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
               <div className="pt-2">
                 <button 
                   type="submit"
+                  disabled={nuevaRecCapturaLoading}
                   className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wide transition shadow-lg shadow-amber-950/20 cursor-pointer"
                 >
                   ENVIAR A LOGÍSTICA 🚚
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDITAR RECOLECCIÓN MODAL */}
+      {editingRec && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingRec(null); }}
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/60 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
+              <h2 className="text-slate-100 font-bold text-sm tracking-widest font-display uppercase text-amber-500 flex items-center gap-1.5">
+                Editar Solicitud - {editingRec.id}
+              </h2>
+              <button onClick={() => setEditingRec(null)} className="text-slate-400 hover:text-slate-200 transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                const res = modificarRecoleccionAdmin({
+                  id: editingRec.id,
+                  proveedor: editProvNombre,
+                  direccion: editDireccionRec,
+                  referencias: editRefRec,
+                  material: editMaterialRec,
+                  fechaDisp: editFechaRec,
+                  captura: editCaptura
+                });
+                if (res.success) {
+                  setEditingRec(null);
+                  Swal.fire({
+                    icon: 'success',
+                    title: 'Recolección Modificada',
+                    text: 'Los cambios fueron aplicados y guardados de forma segura.',
+                    background: '#0d1b2a',
+                    color: '#fff',
+                    timer: 2000,
+                    showConfirmButton: false
+                  });
+                } else {
+                  Swal.fire({
+                    icon: 'error',
+                    title: 'Error al Guardar',
+                    text: res.error || 'No se pudo guardar la recolección.',
+                    background: '#0d1b2a',
+                    color: '#fff'
+                  });
+                }
+              }} 
+              className="p-6 space-y-4 overflow-y-auto flex-grow"
+            >
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Proveedor</label>
+                <input 
+                  type="text" 
+                  value={editProvNombre}
+                  onChange={(e) => handleEditProvChange(e.target.value)}
+                  required
+                  placeholder="Escribe el nombre del proveedor..."
+                  className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+
+                {editSugProvs.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-750 rounded-lg shadow-xl max-h-40 overflow-y-auto z-50 divide-y divide-slate-800">
+                    {editSugProvs.map((pr, i) => (
+                      <div 
+                        key={i} 
+                        onClick={() => selectEditProvSug(pr)}
+                        className="p-2.5 hover:bg-slate-700/60 cursor-pointer text-xs transition first:rounded-t-lg last:rounded-b-lg text-left"
+                      >
+                        <p className="font-bold text-slate-100">{pr.nombre}</p>
+                        <p className="text-slate-400 text-[10px] truncate">{pr.direccion}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-amber-950/10 p-3.5 rounded-xl border border-amber-900/20 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Dirección de Recolección</label>
+                  <textarea 
+                    value={editDireccionRec}
+                    onChange={(e) => setEditDireccionRec(e.target.value)}
+                    required
+                    rows={2}
+                    className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Referencias</label>
+                  <input 
+                    type="text" 
+                    value={editRefRec}
+                    onChange={(e) => setEditRefRec(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Material a Traer</label>
+                <textarea 
+                  value={editMaterialRec}
+                  onChange={(e) => setEditMaterialRec(e.target.value)}
+                  required
+                  rows={2}
+                  className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Fecha Disponible</label>
+                <input 
+                  type="date" 
+                  value={editFechaRec}
+                  onChange={(e) => setEditFechaRec(e.target.value)}
+                  required
+                  onClick={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                  onFocus={(e) => { try { (e.currentTarget as any).showPicker?.(); } catch (err) {} }}
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-semibold cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 flex justify-between">
+                  Modificar Captura de Pantalla
+                  {editCapturaLoading && <span className="text-[10px] text-amber-400 font-bold">Procesando...</span>}
+                </label>
+                
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    {editCaptura ? (
+                      <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 leading-normal truncate">
+                        ✔ CAPTURA LISTA ({Math.round(editCaptura.length / 1024)} KB)
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-[11px] leading-normal block">
+                        Sube un nuevo screenshot si deseas cambiarlo.
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    type="button"
+                    onClick={() => document.getElementById('comprasScreenshotUploadEdit')?.click()}
+                    className="bg-amber-950/40 hover:bg-amber-900/40 border border-amber-900/50 hover:border-amber-800 text-amber-300 font-bold px-3 py-2 rounded-lg text-xs cursor-pointer tracking-wide uppercase transition inline-flex items-center gap-1 shadow"
+                  >
+                    <Upload size={13} />
+                    {editCaptura ? 'Cambiar' : 'Subir'}
+                  </button>
+                  
+                  <input 
+                    type="file" 
+                    id="comprasScreenshotUploadEdit" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setEditCapturaLoading(true);
+                        try {
+                          const base64 = await compressBase64Image(file);
+                          setEditCaptura(base64);
+                        } catch (err) {
+                          console.error(err);
+                          Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Compresión',
+                            text: 'No se pudo procesar la imagen elegida.',
+                            background: '#0d1b2a',
+                            color: '#fff'
+                          });
+                        } finally {
+                          setEditCapturaLoading(false);
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  type="submit"
+                  disabled={editCapturaLoading}
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs uppercase tracking-wide transition shadow-lg shadow-amber-950/20 cursor-pointer"
+                >
+                  GUARDAR CAMBIOS 🚚
                 </button>
               </div>
             </form>

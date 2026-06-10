@@ -19,7 +19,9 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
     obtenerEtaParaTicket,
     guardarLocalPendiente,
     sincronizarPendientesLocales,
-    clearOfflineQueue
+    clearOfflineQueue,
+    kilometrajes,
+    guardarKilometrajeHoy
   } = useLogistika();
 
   const [internalActiveChofer, setInternalActiveChofer] = useState<string>(choferes[0]?.nombre || 'Elias');
@@ -27,9 +29,15 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   const [offlineSimulated, setOfflineSimulated] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
+  // Mileage verification state
+  const [mileageTaskToStart, setMileageTaskToStart] = useState<any | null>(null);
+  const [mileageBase64, setMileageBase64] = useState<string | null>(null);
+  const [savingMileage, setSavingMileage] = useState(false);
+
   // Active inputs inside delivery completions
   const [completionTicketId, setCompletionTicketId] = useState<string | null>(null);
   const [receptor, setReceptor] = useState('');
+  const [comentarios, setComentarios] = useState('');
   const [capturedFotos, setCapturedFotos] = useState<string[]>([]);
 
   const activeTaskList = obtenerTareasChofer(activeChofer);
@@ -79,6 +87,23 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   };
 
   const handleStartRoute = async (task: any) => {
+    // Check if this driver already registered mileage for today
+    const todayStr = getMexicoCityDateStr();
+    const hasMileage = (kilometrajes || []).some(
+      k => k.chofer?.toLowerCase() === activeChofer.toLowerCase() && k.fecha === todayStr
+    );
+
+    if (!hasMileage) {
+      // Intercept with mileage photo prompt modal
+      setMileageTaskToStart(task);
+      setMileageBase64(null);
+      return;
+    }
+
+    await proceedStartRoute(task);
+  };
+
+  const proceedStartRoute = async (task: any) => {
     // 1. WhatsApp notification trigger
     const phoneClean = task.telefono ? task.telefono.replace(/\D/g, '') : '';
     const formattedTel = phoneClean.length === 10 ? `52${phoneClean}` : phoneClean;
@@ -153,6 +178,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   const handleOpenFinalizar = (task: any) => {
     setCompletionTicketId(task.id);
     setReceptor('');
+    setComentarios('');
     setCapturedFotos([]);
   };
 
@@ -218,7 +244,8 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
         lat: 19.3980,
         lng: -99.2740,
         receptor: receptorLabel,
-        fotos: capturedFotos
+        fotos: capturedFotos,
+        comentarioChofer: comentarios.trim()
       });
 
       Swal.fire({
@@ -237,7 +264,8 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
         lat: 19.3980,
         lng: -99.2740,
         receptor: receptorLabel,
-        fotos: capturedFotos
+        fotos: capturedFotos,
+        comentarioChofer: comentarios.trim()
       });
 
       Swal.fire({
@@ -252,6 +280,9 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
     }
 
     setCompletionTicketId(null);
+    setReceptor('');
+    setComentarios('');
+    setCapturedFotos([]);
   };
 
   return (
@@ -576,6 +607,19 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                 </div>
               </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 font-sans">
+                  Comentarios o Anotaciones de Carga/Entrega
+                </label>
+                <textarea 
+                  placeholder="Escribe aquí observaciones, inconvenientes o detalles opcionales..."
+                  value={comentarios}
+                  onChange={(e) => setComentarios(e.target.value)}
+                  rows={2}
+                  className="w-full bg-slate-900 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-teal-500 font-semibold"
+                />
+              </div>
+
               <div className="pt-2 border-t border-slate-800">
                 <button 
                   onClick={handleCompleteTask}
@@ -584,6 +628,144 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                   Confirmar Firma de Conclusión ✔️
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ODÓMETRO / MILEAGE ENTRY MODAL */}
+      {mileageTaskToStart && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setMileageTaskToStart(null); }}
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 mt-24 mb-8 md:my-8 cursor-default overflow-hidden flex flex-col justify-between">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-4 shrink-0">
+              <h3 className="font-bold text-slate-100 text-xs uppercase tracking-widest text-amber-500">
+                Primer Viaje del Día: Kilometraje
+              </h3>
+              <button onClick={() => setMileageTaskToStart(null)} className="text-slate-400 hover:text-slate-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-slate-300 leading-relaxed text-left">
+                Hola, <strong>{activeChofer}</strong>. Este es tu primer viaje del día actual. Por políticas de la empresa, debes tomar una fotografía legible del <strong>kilometraje de la camioneta/camión</strong> antes de iniciar recorrido.
+              </p>
+
+              <div className="bg-slate-950 border border-dashed border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+                {!mileageBase64 ? (
+                  <div className="flex flex-col items-center justify-center text-center py-6 gap-2">
+                    <Truck size={36} className="text-slate-600" />
+                    <div>
+                      <p className="text-[11px] text-slate-400 font-bold">Foto del Odómetro/Kilometraje</p>
+                      <p className="text-[9px] text-slate-500 mt-0.5">La foto se guardará ligada a tu cuenta hoy</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative aspect-video border border-slate-800 rounded-lg overflow-hidden bg-slate-900">
+                    <img 
+                      src={mileageBase64} 
+                      alt="Kilometraje camioneta" 
+                      className="w-full h-full object-cover" 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setMileageBase64(null)}
+                      className="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full p-1.5 cursor-pointer shadow-lg outline-none"
+                      title="Quitar foto"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex justify-center pt-1">
+                  <button 
+                    type="button"
+                    onClick={() => document.getElementById('mileageCameraInput')?.click()}
+                    className="bg-amber-950/40 hover:bg-amber-900/60 border border-amber-900/50 hover:border-amber-800 text-amber-300 text-xs font-bold px-4 py-2.5 rounded-lg cursor-pointer transition inline-flex items-center gap-1.5 shadow"
+                  >
+                    <Upload size={12} />
+                    {mileageBase64 ? 'Cambiar Foto' : 'Tomar Foto de Kilometraje'}
+                  </button>
+                </div>
+                
+                <input 
+                  type="file" 
+                  id="mileageCameraInput" 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSavingMileage(true);
+                      try {
+                        const base64 = await compressBase64Image(file);
+                        setMileageBase64(base64);
+                      } catch (err) {
+                        console.error("Error compressing mileage photo:", err);
+                        Swal.fire({
+                          icon: 'error',
+                          title: 'Error de Compresión',
+                          text: 'No se pudo procesar la imagen elegida.',
+                          background: '#0d1b2a',
+                          color: '#fff'
+                        });
+                      } finally {
+                        setSavingMileage(false);
+                      }
+                    }
+                  }} 
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 mt-4">
+              <button 
+                onClick={async () => {
+                  if (!mileageBase64) {
+                    Swal.fire({
+                      icon: 'warning',
+                      title: 'Foto Obligatoria',
+                      text: 'Debes capturar la fotografía del kilometraje antes de continuar.',
+                      background: '#0d1b2a',
+                      color: '#fff'
+                    });
+                    return;
+                  }
+                  setSavingMileage(true);
+                  const todayStr = getMexicoCityDateStr();
+                  const saved = await guardarKilometrajeHoy(activeChofer, todayStr, mileageBase64);
+                  if (saved) {
+                    const task = mileageTaskToStart;
+                    setMileageTaskToStart(null);
+                    setMileageBase64(null);
+                    setSavingMileage(false);
+                    // Now proceed normally to starting the route!
+                    proceedStartRoute(task);
+                  } else {
+                    setSavingMileage(false);
+                    Swal.fire({
+                      icon: 'error',
+                      title: 'Error al Guardar',
+                      text: 'No se pudo registrar la foto del kilometraje. Verifique su señal e intente nuevamente.',
+                      background: '#0d1b2a',
+                      color: '#fff'
+                    });
+                  }
+                }}
+                disabled={savingMileage || !mileageBase64}
+                className={`w-full font-black py-3 rounded-lg text-xs uppercase tracking-widest transition cursor-pointer ${
+                  !mileageBase64 || savingMileage
+                    ? 'bg-slate-850 border border-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow shadow-amber-950/20'
+                }`}
+              >
+                {savingMileage ? 'Guardando...' : 'Comenzar Ruta del Día 🚚'}
+              </button>
             </div>
           </div>
         </div>

@@ -6,8 +6,9 @@
 import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate, formatedDisplayDateTime } from '../context/LogistikaContext';
 import { Pedido } from '../types';
-import { Plus, Search, MapPin, Phone, MessageSquare, Edit2, Calendar, FileText, X, Check, Eye } from 'lucide-react';
+import { Plus, Search, MapPin, Phone, MessageSquare, Edit2, Calendar, FileText, X, Check, Eye, Upload } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { compressBase64Image } from '../lib/imageCompressor';
 
 export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
   const {
@@ -34,6 +35,8 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
   const [numInt, setNumInt] = useState('');
   const [referencias, setReferencias] = useState('');
   const [obsTienda, setObsTienda] = useState('');
+  const [captura, setCaptura] = useState('');
+  const [capturaLoading, setCapturaLoading] = useState(false);
   const [msgError, setMsgError] = useState('');
 
   // Suggestions state
@@ -101,6 +104,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
     setNumInt('');
     setReferencias('');
     setObsTienda('');
+    setCaptura('');
     setMsgError('');
     setModalOpen(true);
   };
@@ -115,6 +119,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
     setTipoCarga(p.tipo);
     setReferencias(p.ref);
     setObsTienda(p.obs);
+    setCaptura(p.captura || '');
     setMsgError('');
 
     const isStorePickup = p.dir.includes('(ENTREGA EN TIENDA:)');
@@ -214,7 +219,8 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
       direccionPegada,
       numInt,
       ref: referencias,
-      obs: obsTienda
+      obs: obsTienda,
+      captura: captura
     };
 
     const res = guardarPedidoTienda(payload);
@@ -421,13 +427,34 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-4 border-t border-slate-800 mt-4">
-                  <button 
-                    onClick={() => handleOpenEdicion(p)}
-                    className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-lg font-semibold transition border border-slate-700/60"
-                  >
-                    <Edit2 size={12} />
-                    Editar
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleOpenEdicion(p)}
+                      className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3.5 py-2 rounded-lg font-semibold transition border border-slate-700/60 cursor-pointer"
+                    >
+                      <Edit2 size={12} />
+                      Editar
+                    </button>
+
+                    {p.captura && p.captura.trim() !== '' && (
+                      <button 
+                        onClick={() => {
+                          Swal.fire({
+                            title: `Captura del Pedido: #${p.ticket}`,
+                            imageUrl: p.captura,
+                            imageAlt: `Captura #${p.ticket}`,
+                            background: '#0d1b2a',
+                            color: '#fff',
+                            confirmButtonColor: '#0ea5e9',
+                            confirmButtonText: 'Cerrar'
+                          });
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-950/40 border border-amber-900 hover:bg-amber-900/40 px-3 py-2 rounded-lg font-semibold transition cursor-pointer"
+                      >
+                        👁️ Captura
+                      </button>
+                    )}
+                  </div>
 
                   {(p.estatus === 'PROGRAMADO' || p.estatus === 'EN RUTA' || p.estatus === 'FINALIZADO') && (
                     <button 
@@ -609,7 +636,7 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Observaciones</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 font-sans">Observaciones o Notas de Carga</label>
                 <textarea 
                   placeholder="Detalles sobre materiales, horarios de entrega..."
                   value={obsTienda}
@@ -617,6 +644,64 @@ export const Tienda: React.FC<{ lockedStore?: string }> = ({ lockedStore }) => {
                   rows={2}
                   className="w-full bg-slate-900 border border-slate-755 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5 flex justify-between">
+                  Adjuntar Captura de Pantalla
+                  {capturaLoading && <span className="text-[10px] text-teal-400 font-bold">Procesando...</span>}
+                </label>
+                
+                <div className="bg-slate-950 border border-slate-850 rounded-xl p-3 flex items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    {captura ? (
+                      <span className="text-emerald-400 font-bold text-xs flex items-center gap-1 leading-normal truncate">
+                        ✔ CAPTURA LISTA ({Math.round(captura.length / 1024)} KB)
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 text-[11px] leading-normal block">
+                        Screenshot opcional del pago, pedido o ticket
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    type="button"
+                    onClick={() => document.getElementById('tiendaScreenshotUpload')?.click()}
+                    className="bg-teal-950/40 hover:bg-teal-900/40 border border-teal-900/50 hover:border-teal-800 text-teal-300 font-bold px-3 py-2 rounded-lg text-xs cursor-pointer tracking-wide uppercase transition inline-flex items-center gap-1 shadow"
+                  >
+                    <Upload size={13} />
+                    {captura ? 'Cambiar' : 'Subir'}
+                  </button>
+                  
+                  <input 
+                    type="file" 
+                    id="tiendaScreenshotUpload" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setCapturaLoading(true);
+                        try {
+                          const base64 = await compressBase64Image(file);
+                          setCaptura(base64);
+                        } catch (err) {
+                          console.error(err);
+                          Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Compresión',
+                            text: 'No se pudo procesar la imagen elegida.',
+                            background: '#0d1b2a',
+                            color: '#fff'
+                          });
+                        } finally {
+                          setCapturaLoading(false);
+                        }
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
               <div className="pt-2">

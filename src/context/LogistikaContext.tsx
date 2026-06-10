@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig, LogRuta, HistorialEntrega, HistorialRecoleccion } from '../types';
+import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig, LogRuta, HistorialEntrega, HistorialRecoleccion, KilometrajeRegistro } from '../types';
 import { db } from '../lib/firebase';
 import { 
   collection, 
@@ -174,11 +174,13 @@ interface LogistikaContextType {
   logs: LogRuta[];
   historialEntregas: HistorialEntrega[];
   historialRecolecciones: HistorialRecoleccion[];
+  kilometrajes: KilometrajeRegistro[];
   
-  guardarPedidoTienda: (p: Partial<Pedido> & { idTicket: string; esEdicion?: boolean; numInt?: string; entregaEnTienda?: boolean; direccionPegada?: string }) => { success: boolean; error?: string };
+  guardarKilometrajeHoy: (chofer: string, fecha: string, base64Foto: string) => Promise<boolean>;
+  guardarPedidoTienda: (p: Partial<Pedido> & { idTicket: string; esEdicion?: boolean; numInt?: string; entregaEnTienda?: boolean; direccionPegada?: string; captura?: string }) => { success: boolean; error?: string };
   verificarTicketExistente: (tienda: string, ticket: string) => boolean;
   guardarDictamenCompras: (data: { ticket: string; estatus: string; comprasObs: string; comprasUbic: string }) => { success: boolean; error?: string };
-  guardarSolicitudDesdeCompras: (data: { idRec: string; proveedor: string; direccion: string; referencias: string; material: string; fechaDisponible: string }) => { success: boolean; error?: string };
+  guardarSolicitudDesdeCompras: (data: { idRec: string; proveedor: string; direccion: string; referencias: string; material: string; fechaDisponible: string; captura?: string }) => { success: boolean; error?: string };
   crearNuevaRecoleccion: (data: Partial<Recoleccion>) => boolean;
   
   actualizarPedidoLogistica: (p: { id: string; chofer: string; fecha: string; estatus: string; orden: number | ''; obs?: string }) => void;
@@ -190,7 +192,7 @@ interface LogistikaContextType {
   liberarOrden: (payload: { chofer: string; fecha: string; idActual: string; hojaActual: 'ENTREGAS' | 'RECOLECCIONES' }) => { ok: boolean };
 
   obtenerTareasChofer: (nombre: string) => Array<any>;
-  actualizarEstatusChofer: (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; fila?: number; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[] }) => string | boolean;
+  actualizarEstatusChofer: (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; fila?: number; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[]; comentarioChofer?: string }) => string | boolean;
   subirFotoDrive: (idPedido: string, base64Data: string | string[]) => string;
   obtenerEtaParaTicket: (chofer: string, idTicket: string, targetDate: string, startingNow?: boolean) => string;
   
@@ -372,6 +374,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [logs, setLogs] = useState<LogRuta[]>([]);
   const [historialEntregas, setHistorialEntregas] = useState<HistorialEntrega[]>([]);
   const [historialRecolecciones, setHistorialRecolecciones] = useState<HistorialRecoleccion[]>([]);
+  const [kilometrajes, setKilometrajes] = useState<KilometrajeRegistro[]>([]);
   const [offlineQueue, setOfflineQueue] = useState<any[]>(() => {
     const saved = localStorage.getItem('logistika_offline_queue');
     return saved ? JSON.parse(saved) : [];
@@ -542,6 +545,12 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setHistorialRecolecciones(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'historial_recolecciones'));
 
+    const unsubKilometraje = onSnapshot(collection(db, 'kilometraje'), (snap) => {
+      const list: KilometrajeRegistro[] = [];
+      snap.forEach(d => list.push({ ...d.data() as KilometrajeRegistro, id: d.id }));
+      setKilometrajes(list);
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'kilometraje'));
+
     return () => {
       unsubPedidos();
       unsubRecs();
@@ -551,6 +560,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       unsubLogs();
       unsubHistE();
       unsubHistR();
+      unsubKilometraje();
     };
   }, []);
 
@@ -643,7 +653,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return historialEntregas.some(h => (h.ticket || '').toUpperCase() === ticketBuscado && (h.tienda || '').toUpperCase() === tiendaBuscada);
   };
 
-  const guardarPedidoTienda = (datos: Partial<Pedido> & { idTicket: string; esEdicion?: boolean; numInt?: string; entregaEnTienda?: boolean; direccionPegada?: string }): { success: boolean, error?: string } => {
+  const guardarPedidoTienda = (datos: Partial<Pedido> & { idTicket: string; esEdicion?: boolean; numInt?: string; entregaEnTienda?: boolean; direccionPegada?: string; captura?: string }): { success: boolean, error?: string } => {
     try {
       const ticketNuevo = datos.idTicket.toUpperCase().trim();
       const esEdicion = !!datos.esEdicion;
@@ -667,7 +677,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const docRef = doc(db, 'pedidos', ticketNuevo);
         getDoc(docRef).then(snap => {
           if (snap.exists()) {
-            setDoc(docRef, {
+            const updateObj: any = {
               ...snap.data(),
               cliente: (datos.cliente || '').toUpperCase().trim(),
               tel: datos.tel || '',
@@ -677,7 +687,11 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               obs: (datos.obs || '').toUpperCase().trim(),
               lat: latitude,
               lng: longitude
-            }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${ticketNuevo}`));
+            };
+            if (datos.captura) {
+              updateObj.captura = datos.captura;
+            }
+            setDoc(docRef, updateObj).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${ticketNuevo}`));
           }
         });
       } else {
@@ -704,7 +718,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           obsLogistica: '',
           lat: latitude,
           lng: longitude,
-          dateped: getMexicoCityDateStr()
+          dateped: getMexicoCityDateStr(),
+          captura: datos.captura || ''
         };
         setDoc(doc(db, 'pedidos', ticketNuevo), nuevo)
           .catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${ticketNuevo}`));
@@ -736,7 +751,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const guardarSolicitudDesdeCompras = (datos: { idRec: string; proveedor: string; direccion: string; referencias: string; material: string; fechaDisponible: string }): { success: boolean; error?: string } => {
+  const guardarSolicitudDesdeCompras = (datos: { idRec: string; proveedor: string; direccion: string; referencias: string; material: string; fechaDisponible: string; captura?: string }): { success: boolean; error?: string } => {
     try {
       const idManual = datos.idRec.trim().toUpperCase();
       const yaExiste = recolecciones.some(r => r.id.toUpperCase() === idManual);
@@ -765,7 +780,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         estatus: 'SOLICITADO',
         fechaAlta: getMexicoCityDateTimeStr(),
         lat: latitude,
-        lng: longitude
+        lng: longitude,
+        captura: datos.captura || ''
       };
 
       setDoc(doc(db, 'recolecciones', idManual), nueva)
@@ -1287,6 +1303,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const nombreB = nombre.trim().toLowerCase();
     if (!nombreB) return [];
 
+    const todayStr = getMexicoCityDateStr();
+
     pedidos.forEach(p => {
       const choferP = (p.chofer || '').trim().toLowerCase();
       
@@ -1296,7 +1314,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const estatus = latestOffline ? latestOffline.nuevoEstatus : p.estatus;
       const estatusP = estatus.toUpperCase();
 
-      if (choferP === nombreB && estatusP !== 'FINALIZADO') {
+      if (choferP === nombreB && estatusP !== 'FINALIZADO' && normalizarFecha(p.dateenv || '') === todayStr) {
         res.push({
           id: p.ticket,
           tienda: p.tienda,
@@ -1324,7 +1342,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const estatus = latestOffline ? latestOffline.nuevoEstatus : r.estatus;
       const estatusR = estatus.toUpperCase();
 
-      if (choferR === nombreB && estatusR !== 'FINALIZADO' && estatusR !== 'RECOLECTADO') {
+      const rDate = r.fechaReal || r.fechaDisponible || '';
+      if (choferR === nombreB && estatusR !== 'FINALIZADO' && estatusR !== 'RECOLECTADO' && normalizarFecha(rDate) === todayStr) {
         res.push({
           id: r.id,
           cliente: r.proveedor,
@@ -1342,7 +1361,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return res.sort((a, b) => a.orden - b.orden);
   };
 
-  const actualizarEstatusChofer = (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[] }): string | boolean => {
+  const actualizarEstatusChofer = (d: { id: string; hoja: 'DB_PEDIDOS' | 'DB_RECOLECCIONES'; nuevoEstatus: string; chofer: string; lat: number; lng: number; receptor?: string; fotos?: string[]; comentarioChofer?: string }): string | boolean => {
     try {
       const ahora = getMexicoCityDateTimeStr();
 
@@ -1358,6 +1377,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             };
             if (d.nuevoEstatus.toUpperCase() === 'FINALIZADO') {
               updateObj.fechaFinalizado = ahora;
+            }
+            if (d.comentarioChofer && d.comentarioChofer.trim() !== '') {
+              updateObj.comentarioChofer = d.comentarioChofer.trim();
             }
             if (d.fotos && d.fotos.length > 0) {
               updateObj.fotos = d.fotos;
@@ -1377,6 +1399,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             };
             if (d.nuevoEstatus.toUpperCase() === 'FINALIZADO' || d.nuevoEstatus.toUpperCase() === 'RECOLECTADO') {
               updateObj.fechaFinalizado = ahora;
+            }
+            if (d.comentarioChofer && d.comentarioChofer.trim() !== '') {
+              updateObj.comentarioChofer = d.comentarioChofer.trim();
             }
             if (d.fotos && d.fotos.length > 0) {
               updateObj.fotos = d.fotos;
@@ -2018,7 +2043,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             material: data.material.toUpperCase(),
             fechaDisponible: data.fechaDisp,
             lat: latitude,
-            lng: longitude
+            lng: longitude,
+            captura: data.captura !== undefined ? data.captura : (snap.data()?.captura || '')
           }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${idUpper}`));
         }
       });
@@ -2082,7 +2108,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         lat: item.lat,
         lng: item.lng,
         receptor: item.receptor,
-        fotos: item.fotos
+        fotos: item.fotos,
+        comentarioChofer: item.comentarioChofer
       });
     });
 
@@ -2132,6 +2159,25 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
+  const guardarKilometrajeHoy = async (chofer: string, fecha: string, base64Foto: string): Promise<boolean> => {
+    try {
+      const docId = `${chofer}_${fecha}`;
+      const docRef = doc(db, 'kilometraje', docId);
+      const nowStr = getMexicoCityDateTimeStr();
+      await setDoc(docRef, {
+        id: docId,
+        chofer,
+        fecha,
+        foto: base64Foto,
+        fechaAlta: nowStr
+      });
+      return true;
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `kilometraje/${chofer}_${fecha}`);
+      return false;
+    }
+  };
+
   return (
     <LogistikaContext.Provider value={{
       pedidos,
@@ -2142,6 +2188,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       logs,
       historialEntregas,
       historialRecolecciones,
+      kilometrajes,
+      
+      guardarKilometrajeHoy,
       
       guardarPedidoTienda,
       verificarTicketExistente,

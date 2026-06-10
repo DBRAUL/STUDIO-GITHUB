@@ -28,6 +28,8 @@ export interface Pedido {
   dateped?: string; // formatted date for admin view
   numInt?: string;
   fechaFinalizado?: string;
+  captura?: string; // Screenshot capture file (base64)
+  comentarioChofer?: string; // Driver final comments
 }
 
 export interface Recoleccion {
@@ -48,6 +50,16 @@ export interface Recoleccion {
   fotoUrl?: string; // Optional single photo
   fotos?: string[]; // Optional array of multiple photos
   fechaFinalizado?: string;
+  captura?: string; // Screenshot capture file (base64)
+  comentarioChofer?: string; // Driver final comments
+}
+
+export interface KilometrajeRegistro {
+  id: string; // `${chofer}_${fecha}`
+  chofer: string;
+  fecha: string;
+  foto: string; // Odometer photo (base64)
+  fechaAlta: string;
 }
 
 export interface ChoferConfig {

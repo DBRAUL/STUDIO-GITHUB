@@ -531,6 +531,29 @@ export const Logistica: React.FC = () => {
                         💡 {p.obsLogistica}
                       </p>
                     )}
+
+                    {(p.receptor || p.fechaFinalizado || p.comentarioChofer) && (
+                      <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg p-2.5 text-[11px] space-y-1">
+                        {p.receptor && (
+                          <div className="flex items-center gap-1 text-emerald-400">
+                            <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400 w-[90px]">Recibió:</span>
+                            <span className="font-semibold uppercase truncate">{p.receptor}</span>
+                          </div>
+                        )}
+                        {p.fechaFinalizado && (
+                          <div className="flex items-center gap-1 text-emerald-400 font-mono">
+                            <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400 w-[90px] font-sans">Finalizado:</span>
+                            <span>{formatedDisplayDateTime(p.fechaFinalizado)}</span>
+                          </div>
+                        )}
+                        {p.comentarioChofer && (
+                          <div className="pt-1.5 border-t border-emerald-900/20 mt-1 text-teal-300">
+                            <span className="font-bold uppercase tracking-wider text-[8px] text-slate-400 block mb-0.5">Comentarios Chofer:</span>
+                            <span className="italic leading-relaxed block bg-slate-900/40 p-1.5 rounded">{p.comentarioChofer}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center gap-2 pt-4 border-t border-slate-800 mt-4">
@@ -704,6 +727,13 @@ export const Logistica: React.FC = () => {
                         <span className="text-[11px] font-bold text-amber-500 mt-0.5 block">{r.orden ? `#${r.orden}` : '—'}</span>
                       </div>
                     </div>
+
+                    {r.comentarioChofer && (
+                      <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg p-2.5 text-[11px] text-teal-300">
+                        <span className="font-bold uppercase tracking-wider text-[8px] text-slate-400 block mb-0.5">Comentarios Chofer:</span>
+                        <span className="italic leading-relaxed block bg-slate-900/40 p-1.5 rounded">{r.comentarioChofer}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center gap-2 pt-4 border-t border-slate-800 mt-4">
