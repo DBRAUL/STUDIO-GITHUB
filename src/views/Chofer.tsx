@@ -418,8 +418,19 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                   </div>
 
                   {/* Operational driver instructions and logistics/compras fields */}
-                  {(t.obsLogistica || t.comprasObs || t.comprasUbic) && (
+                  {(t.obs || t.obsLogistica || t.comprasObs || t.comprasUbic) && (
                     <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-3.5 space-y-3.5 text-xs">
+                      {t.obs && (
+                        <div className="space-y-1">
+                          <span className="block text-[10px] uppercase font-extrabold tracking-wider text-rose-455">
+                            🏪 Obs. de la Tienda
+                          </span>
+                          <p className="text-slate-200 font-medium bg-slate-900 border border-slate-800/50 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words leading-relaxed">
+                            {t.obs}
+                          </p>
+                        </div>
+                      )}
+
                       {t.obsLogistica && (
                         <div className="space-y-1">
                           <span className="block text-[10px] uppercase font-extrabold tracking-wider text-teal-400">

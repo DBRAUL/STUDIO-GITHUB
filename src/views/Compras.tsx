@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate, formatedDisplayDateTime } from '../context/LogistikaContext';
 import { Pedido, Recoleccion } from '../types';
-import { Clipboard, Truck, Search, Plus, MapPin, Eye, FileText, CheckCircle2, MessageCircle, MoreVertical, X, Upload, Calendar } from 'lucide-react';
+import { Clipboard, Truck, Search, Plus, MapPin, Eye, FileText, CheckCircle2, MessageCircle, MoreVertical, X, Upload, Calendar, Settings, Edit2, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { compressBase64Image } from '../lib/imageCompressor';
 
@@ -17,7 +17,12 @@ export const Compras: React.FC = () => {
     proveedores,
     guardarDictamenCompras,
     guardarSolicitudDesdeCompras,
-    modificarRecoleccionAdmin
+    modificarRecoleccionAdmin,
+    choferes,
+    tiendas,
+    agregarChofer, editarChofer, eliminarChofer,
+    agregarProveedor, editarProveedor, eliminarProveedor,
+    agregarTienda, editarTienda, eliminarTienda
   } = useLogistika();
 
   const [activeTab, setActiveTab] = useState<'PEDIDOS' | 'RECOLECCIONES'>('PEDIDOS');
@@ -54,6 +59,90 @@ export const Compras: React.FC = () => {
   const [editCaptura, setEditCaptura] = useState('');
   const [editCapturaLoading, setEditCapturaLoading] = useState(false);
   const [editSugProvs, setEditSugProvs] = useState<any[]>([]);
+
+  // Settings dropdown and catalog modal states
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeCatalog, setActiveCatalog] = useState<'CHOFERES' | 'PROVEEDORES' | 'TIENDAS' | null>(null);
+
+  // Catalog CRUD Modal Helper states
+  const [catalogsNewName, setCatalogsNewName] = useState('');
+  const [catalogsNewAddress, setCatalogsNewAddress] = useState('');
+  const [catalogsNewRefOrSiglas, setCatalogsNewRefOrSiglas] = useState('');
+  const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+
+  // --- CATALOG CRUD OPERATIONS HANDLERS ---
+  const handleCatalogAddClick = () => {
+    if (!catalogsNewName.trim()) return;
+
+    if (activeCatalog === 'CHOFERES') {
+      agregarChofer(catalogsNewName);
+    } else if (activeCatalog === 'PROVEEDORES') {
+      if (!catalogsNewAddress.trim()) return;
+      agregarProveedor({
+        nombre: catalogsNewName,
+        direccion: catalogsNewAddress,
+        referencia: catalogsNewRefOrSiglas
+      });
+    } else if (activeCatalog === 'TIENDAS') {
+      if (!catalogsNewAddress.trim() || !catalogsNewRefOrSiglas.trim()) return;
+      agregarTienda({
+        nombre: catalogsNewName,
+        direccion: catalogsNewAddress,
+        siglas: catalogsNewRefOrSiglas
+      });
+    }
+
+    setCatalogsNewName('');
+    setCatalogsNewAddress('');
+    setCatalogsNewRefOrSiglas('');
+    setEditingItemIdx(null);
+  };
+
+  const handleCatalogEditClick = (idx: number, item: any) => {
+    setEditingItemIdx(idx);
+    setCatalogsNewName(item.nombre || item || '');
+    setCatalogsNewAddress(item.direccion || '');
+    setCatalogsNewRefOrSiglas(item.referencia || item.siglas || '');
+  };
+
+  const handleCatalogUpdateClick = (idx: number) => {
+    const fila = idx + 2; 
+
+    if (activeCatalog === 'CHOFERES') {
+      editarChofer(fila, catalogsNewName);
+    } else if (activeCatalog === 'PROVEEDORES') {
+      editarProveedor(fila, {
+        nombre: catalogsNewName,
+        direccion: catalogsNewAddress,
+        referencia: catalogsNewRefOrSiglas
+      });
+    } else if (activeCatalog === 'TIENDAS') {
+      editarTienda(fila, {
+        nombre: catalogsNewName,
+        direccion: catalogsNewAddress,
+        siglas: catalogsNewRefOrSiglas
+      });
+    }
+
+    setCatalogsNewName('');
+    setCatalogsNewAddress('');
+    setCatalogsNewRefOrSiglas('');
+    setEditingItemIdx(null);
+  };
+
+  const handleCatalogDelete = (idx: number) => {
+    const confirm = window.confirm('¿Está seguro de eliminar este registro del catálogo de forma permanente?');
+    if (!confirm) return;
+
+    const fila = idx + 2;
+    if (activeCatalog === 'CHOFERES') {
+      eliminarChofer(fila);
+    } else if (activeCatalog === 'PROVEEDORES') {
+      eliminarProveedor(fila);
+    } else if (activeCatalog === 'TIENDAS') {
+      eliminarTienda(fila);
+    }
+  };
 
   const handleEditProvChange = (val: string) => {
     setEditProvNombre(val);
@@ -229,13 +318,52 @@ export const Compras: React.FC = () => {
           </button>
         </div>
 
-        <button 
-          onClick={handleOpenNuevaRec}
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-lg text-xs tracking-wide uppercase transition inline-flex items-center gap-1.5 w-full sm:w-auto justify-center cursor-pointer shadow-lg shadow-amber-950/20"
-        >
-          <Plus size={14} />
-          Nueva Recolección
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto text-right">
+          <button 
+            onClick={handleOpenNuevaRec}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-lg text-xs tracking-wide uppercase transition inline-flex items-center gap-1.5 w-full sm:w-auto justify-center cursor-pointer shadow-lg shadow-amber-950/20"
+          >
+            <Plus size={14} />
+            Nueva Recolección
+          </button>
+
+          <div className="relative w-full sm:w-auto">
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className="bg-slate-850 hover:bg-slate-805 border border-slate-700 hover:text-amber-400 text-slate-300 font-bold px-4 py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition text-xs uppercase w-full sm:w-auto cursor-pointer"
+            >
+              <Settings size={15} />
+              🔧 Catálogos
+            </button>
+
+            {/* Dropdown Menu */}
+            {showSettings && (
+              <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-750 rounded-xl shadow-2xl z-40 overflow-hidden divide-y divide-slate-800 text-left">
+                <span className="block px-4 py-2 text-[10px] text-amber-500 font-black tracking-widest uppercase">
+                  ADMINISTRAR
+                </span>
+                <button 
+                  onClick={() => { setActiveCatalog('CHOFERES'); setShowSettings(false); }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-805 flex items-center gap-2"
+                >
+                  🚚 Choferes
+                </button>
+                <button 
+                  onClick={() => { setActiveCatalog('PROVEEDORES'); setShowSettings(false); }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-855 flex items-center gap-2"
+                >
+                  🏢 Proveedores
+                </button>
+                <button 
+                  onClick={() => { setActiveCatalog('TIENDAS'); setShowSettings(false); }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-855 flex items-center gap-2"
+                >
+                  🏪 Tiendas
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* SEARCH AND GRID - VIEW CONDITIONAL RENDERS */}
@@ -944,6 +1072,160 @@ export const Compras: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CATALOG DIRECTORY CRUD INNER DRAWER / INTERACTIVE POPUP */}
+      {activeCatalog && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) { setActiveCatalog(null); setEditingItemIdx(null); } }}
+          className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[85vh] my-8 cursor-default">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-4 shrink-0">
+              <h3 className="font-bold text-slate-100 text-lg uppercase tracking-wide flex items-center gap-1.5">
+                ⚙️ Catálogos: {activeCatalog}
+              </h3>
+              <button 
+                onClick={() => { setActiveCatalog(null); setEditingItemIdx(null); }} 
+                className="text-slate-400 hover:text-slate-100 cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Catalog inline Builder forms */}
+            <div className="bg-slate-950/30 p-4 rounded-xl border border-slate-800/80 mb-4 space-y-3 shrink-0">
+              <h4 className="text-xs uppercase font-extrabold text-amber-500 tracking-wider">
+                {editingItemIdx !== null ? 'Modificar Registro Seleccionado' : 'Añadir Nuevo Registro al Catálogo'}
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input 
+                  type="text" 
+                  placeholder={activeCatalog === 'CHOFERES' ? 'Nombre del Chofer' : activeCatalog === 'PROVEEDORES' ? 'Nombre del Proveedor' : 'Nombre de la Tienda'}
+                  value={catalogsNewName}
+                  onChange={(e) => setCatalogsNewName(e.target.value)}
+                  className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+
+                {activeCatalog !== 'CHOFERES' && (
+                  <input 
+                    type="text" 
+                    placeholder="Dirección Física Completa"
+                    value={catalogsNewAddress}
+                    onChange={(e) => setCatalogsNewAddress(e.target.value)}
+                    className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                )}
+
+                {activeCatalog !== 'CHOFERES' && (
+                  <input 
+                    type="text" 
+                    placeholder={activeCatalog === 'PROVEEDORES' ? 'Referencias de ubicación' : 'Siglas (Ej: TIV)'}
+                    value={catalogsNewRefOrSiglas}
+                    onChange={(e) => setCatalogsNewRefOrSiglas(e.target.value)}
+                    className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                )}
+              </div>
+
+              <div className="flex gap-2 justify-end pt-1">
+                {editingItemIdx !== null ? (
+                  <>
+                    <button 
+                      onClick={() => handleCatalogUpdateClick(editingItemIdx)}
+                      className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs cursor-pointer transition shadow"
+                    >
+                      Actualizar
+                    </button>
+                    <button 
+                      onClick={() => { setEditingItemIdx(null); setCatalogsNewName(''); setCatalogsNewAddress(''); setCatalogsNewRefOrSiglas(''); }}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs cursor-pointer transition"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={handleCatalogAddClick}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs cursor-pointer transition shadow flex items-center gap-1.5"
+                  >
+                    <Plus size={13} />
+                    Guardar Registro
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Catalog inline Table directories list */}
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+                    {activeCatalog === 'CHOFERES' ? (
+                      <th className="py-2.5 px-3">Nombre del Chofer</th>
+                    ) : activeCatalog === 'PROVEEDORES' ? (
+                      <>
+                        <th className="py-2.5 px-3">Proveedor</th>
+                        <th className="py-2.5 px-3">Dirección Completa</th>
+                        <th className="py-2.5 px-3">Referencias</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="py-2.5 px-3">Tienda</th>
+                        <th className="py-2.5 px-3">Dirección</th>
+                        <th className="py-2.5 px-3">Siglas</th>
+                      </>
+                    )}
+                    <th className="py-2.5 px-3 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 text-xs text-slate-300">
+                  {activeCatalog === 'CHOFERES' ? (
+                    choferes.map((ch, i) => (
+                      <tr key={ch.id || i} className="hover:bg-slate-850/20">
+                        <td className="py-3 px-3 font-semibold text-slate-100">{ch.nombre}</td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button onClick={() => handleCatalogEditClick(i, ch.nombre)} className="text-amber-400 hover:bg-amber-950/40 p-1.5 rounded cursor-pointer"><Edit2 size={13} /></button>
+                            <button onClick={() => handleCatalogDelete(i)} className="text-rose-400 hover:bg-rose-950/45 p-1.5 rounded cursor-pointer"><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : activeCatalog === 'PROVEEDORES' ? (
+                    proveedores.map((pv, i) => (
+                      <tr key={i} className="hover:bg-slate-850/20">
+                        <td className="py-3 px-3 font-semibold text-slate-100">{pv.nombre}</td>
+                        <td className="py-3 px-3 max-w-xs truncate">{pv.direccion}</td>
+                        <td className="py-3 px-3 max-w-[150px] truncate">{pv.referencia}</td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button onClick={() => handleCatalogEditClick(i, pv)} className="text-amber-400 hover:bg-amber-950/40 p-1.5 rounded cursor-pointer"><Edit2 size={13} /></button>
+                            <button onClick={() => handleCatalogDelete(i)} className="text-rose-400 hover:bg-rose-950/45 p-1.5 rounded cursor-pointer"><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    tiendas.map((t, i) => (
+                      <tr key={t.nombre || i} className="hover:bg-slate-850/20">
+                        <td className="py-3 px-3 font-semibold text-slate-100">{t.nombre}</td>
+                        <td className="py-3 px-3 max-w-xs truncate">{t.direccion}</td>
+                        <td className="py-3 px-3 font-mono text-amber-500 font-bold">{t.siglas}</td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button onClick={() => handleCatalogEditClick(i, t)} className="text-amber-400 hover:bg-amber-950/40 p-1.5 rounded cursor-pointer"><Edit2 size={13} /></button>
+                            <button onClick={() => handleCatalogDelete(i)} className="text-rose-400 hover:bg-rose-950/45 p-1.5 rounded cursor-pointer"><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
