@@ -60,6 +60,15 @@ export interface KilometrajeRegistro {
   fecha: string;
   foto: string; // Odometer photo (base64)
   fechaAlta: string;
+  unidadId?: string; // vehicle linked to this reading
+  kmValue?: number; // numeric mileage reading
+}
+
+export interface UnidadConfig {
+  id: string; // e.g. "Camioneta 1"
+  placa: string;
+  rendimiento: number; // km/L
+  combustiblePrecio: number; // Fuel price per Liter
 }
 
 export interface ChoferConfig {

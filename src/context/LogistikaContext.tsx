@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig, LogRuta, HistorialEntrega, HistorialRecoleccion, KilometrajeRegistro } from '../types';
+import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig, LogRuta, HistorialEntrega, HistorialRecoleccion, KilometrajeRegistro, UnidadConfig } from '../types';
 import { db } from '../lib/firebase';
 import { 
   collection, 
@@ -153,6 +153,13 @@ const initialChoferesMock: ChoferConfig[] = [
   { id: '3', nombre: 'Juan Manuel Gomez', lat: 19.367508, lng: -99.284752, ultimaUbicacion: '2026-05-29 18:00:00' }
 ];
 
+const initialUnidadesMock: UnidadConfig[] = [
+  { id: 'CAMIONETA-1', placa: 'SM-291-A', rendimiento: 9.5, combustiblePrecio: 24.50 },
+  { id: 'CAMIONETA-2', placa: 'TL-524-B', rendimiento: 10.0, combustiblePrecio: 24.50 },
+  { id: 'CAMIONETA-3', placa: 'WD-321-C', rendimiento: 9.2, combustiblePrecio: 24.50 },
+  { id: 'CAMIONETA-4', placa: 'RG-902-D', rendimiento: 10.5, combustiblePrecio: 24.50 }
+];
+
 const initialProveedoresMock: ProveedorConfig[] = [
   { nombre: 'ACEROS DE SANTA CLARA', direccion: 'CALLE REVOLUCIÓN INDUSTRIAL 82, ZONA INDUSTRIAL, APODACA', referencia: 'BODEGA 10 CON LETRERO ROJO' },
   { nombre: 'HERRAMIENTAS NACIONALES', direccion: 'AV. COAPA 345, DELEGACION COYOACAN', referencia: 'PORTON NEGRO FRENTE A PARQUE' },
@@ -175,8 +182,9 @@ interface LogistikaContextType {
   historialEntregas: HistorialEntrega[];
   historialRecolecciones: HistorialRecoleccion[];
   kilometrajes: KilometrajeRegistro[];
+  unidades: UnidadConfig[];
   
-  guardarKilometrajeHoy: (chofer: string, fecha: string, base64Foto: string) => Promise<boolean>;
+  guardarKilometrajeHoy: (chofer: string, fecha: string, base64Foto: string, unidadId?: string, kmValue?: number) => Promise<boolean>;
   guardarPedidoTienda: (p: Partial<Pedido> & { idTicket: string; esEdicion?: boolean; numInt?: string; entregaEnTienda?: boolean; direccionPegada?: string; captura?: string }) => { success: boolean; error?: string };
   verificarTicketExistente: (tienda: string, ticket: string) => boolean;
   guardarDictamenCompras: (data: { ticket: string; estatus: string; comprasObs: string; comprasUbic: string }) => { success: boolean; error?: string };
@@ -375,6 +383,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [historialEntregas, setHistorialEntregas] = useState<HistorialEntrega[]>([]);
   const [historialRecolecciones, setHistorialRecolecciones] = useState<HistorialRecoleccion[]>([]);
   const [kilometrajes, setKilometrajes] = useState<KilometrajeRegistro[]>([]);
+  const [unidades, setUnidades] = useState<UnidadConfig[]>([]);
   const [offlineQueue, setOfflineQueue] = useState<any[]>(() => {
     const saved = localStorage.getItem('logistika_offline_queue');
     return saved ? JSON.parse(saved) : [];
@@ -551,6 +560,13 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setKilometrajes(list);
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'kilometraje'));
 
+    const unsubUnidades = onSnapshot(collection(db, 'unidades'), (snap) => {
+      const list: UnidadConfig[] = [];
+      snap.forEach(d => list.push({ ...d.data() as UnidadConfig, id: d.id }));
+      list.sort((a, b) => a.id.localeCompare(b.id));
+      setUnidades(list);
+    }, (err) => handleFirestoreError(err, OperationType.LIST, 'unidades'));
+
     return () => {
       unsubPedidos();
       unsubRecs();
@@ -561,6 +577,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       unsubHistE();
       unsubHistR();
       unsubKilometraje();
+      unsubUnidades();
     };
   }, []);
 
@@ -583,7 +600,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           { name: 'recolecciones', mock: initialRecsMock, key: 'id' },
           { name: 'choferes', mock: initialChoferesMock, key: 'id' },
           { name: 'proveedores', mock: initialProveedoresMock, key: 'nombre' },
-          { name: 'tiendas', mock: initialTiendasMock, key: 'nombre' }
+          { name: 'tiendas', mock: initialTiendasMock, key: 'nombre' },
+          { name: 'unidades', mock: initialUnidadesMock, key: 'id' }
         ];
 
         let seededAny = false;
@@ -2138,6 +2156,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         case 'DB_TIENDAS': colName = 'tiendas'; keyField = 'nombre'; break;
         case 'DB_HIST_ENTREGAS': colName = 'historial_entregas'; keyField = 'ticket'; break;
         case 'DB_HIST_RECOLECCIONES': colName = 'historial_recolecciones'; keyField = 'id'; break;
+        case 'DB_UNIDADES': colName = 'unidades'; keyField = 'id'; break;
         default:
           return { success: false, error: `Tabla '${tabla}' no identificada.` };
       }
@@ -2160,7 +2179,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  const guardarKilometrajeHoy = async (chofer: string, fecha: string, base64Foto: string): Promise<boolean> => {
+  const guardarKilometrajeHoy = async (chofer: string, fecha: string, base64Foto: string, unidadId?: string, kmValue?: number): Promise<boolean> => {
     try {
       const docId = `${chofer}_${fecha}`;
       const docRef = doc(db, 'kilometraje', docId);
@@ -2170,7 +2189,9 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         chofer,
         fecha,
         foto: base64Foto,
-        fechaAlta: nowStr
+        fechaAlta: nowStr,
+        unidadId: unidadId || '',
+        kmValue: kmValue !== undefined ? kmValue : null
       });
       return true;
     } catch (err) {
@@ -2190,6 +2211,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       historialEntregas,
       historialRecolecciones,
       kilometrajes,
+      unidades,
       
       guardarKilometrajeHoy,
       

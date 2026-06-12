@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLogistika, formatedDisplayDate, formatedDisplayDateTime, getMexicoCityDateStr } from '../context/LogistikaContext';
-import { Pedido, Recoleccion } from '../types';
-import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera, FileText } from 'lucide-react';
+import { Pedido, Recoleccion, UnidadConfig, KilometrajeRegistro } from '../types';
+import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera, FileText, CheckCircle2, DollarSign, Fuel, ArrowRight, Truck } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const Admin: React.FC = () => {
@@ -18,6 +18,8 @@ export const Admin: React.FC = () => {
     tiendas,
     historialEntregas,
     historialRecolecciones,
+    unidades,
+    kilometrajes,
     modificarPedidoAdmin,
     modificarRecoleccionAdmin,
     eliminarPedidoAdmin,
@@ -26,7 +28,7 @@ export const Admin: React.FC = () => {
     reemplazarTablaDirecta
   } = useLogistika();
 
-  const [activeTab, setActiveTab] = useState<'PEDIDOS' | 'RECOLECCIONES' | 'HISTORIAL' | 'BASE_DATOS'>('PEDIDOS');
+  const [activeTab, setActiveTab] = useState<'PEDIDOS' | 'RECOLECCIONES' | 'HISTORIAL' | 'BASE_DATOS' | 'AUDITORIA_UNIDADES'>('PEDIDOS');
   const [buscarPed, setBuscarPed] = useState('');
   const [buscarRec, setBuscarRec] = useState('');
   const [buscarHist, setBuscarHist] = useState('');
@@ -48,6 +50,7 @@ export const Admin: React.FC = () => {
       case 'DB_TIENDAS': return tiendas;
       case 'DB_HIST_ENTREGAS': return historialEntregas;
       case 'DB_HIST_RECOLECCIONES': return historialRecolecciones;
+      case 'DB_UNIDADES': return unidades;
       default: return [];
     }
   };
@@ -56,7 +59,7 @@ export const Admin: React.FC = () => {
   useEffect(() => {
     setRawJsonText(JSON.stringify(getCatalogData(selectedCatalog), null, 2));
     setDbError(null);
-  }, [selectedCatalog, pedidos, recolecciones, choferes, proveedores, tiendas, historialEntregas, historialRecolecciones]);
+  }, [selectedCatalog, pedidos, recolecciones, choferes, proveedores, tiendas, historialEntregas, historialRecolecciones, unidades]);
 
   // Edit Pedido Modal
   const [pedModalOpen, setPedModalOpen] = useState(false);
@@ -436,6 +439,15 @@ export const Admin: React.FC = () => {
             }`}>
               {historialEntregas.length + historialRecolecciones.length}
             </span>
+          </button>
+          <button 
+            onClick={() => { setActiveTab('AUDITORIA_UNIDADES'); setFiltroEstatus(null); }}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all w-full sm:w-auto flex items-center justify-center gap-1.5 ${
+              activeTab === 'AUDITORIA_UNIDADES' ? 'bg-slate-800 text-teal-400 shadow' : 'text-slate-400 hover:text-slate-100'
+            }`}
+          >
+            <Activity size={13} />
+            Auditoría de Unidades
           </button>
           <button 
             onClick={() => { setActiveTab('BASE_DATOS'); setFiltroEstatus(null); }}
@@ -911,6 +923,7 @@ export const Admin: React.FC = () => {
                 { id: 'DB_CHOFERES', label: '👤 Choferes / Operadores', count: choferes.length },
                 { id: 'DB_PROVEEDORES', label: '🛒 Catálogo Proveedores', count: proveedores.length },
                 { id: 'DB_TIENDAS', label: '🏢 Catálogo Sucursales', count: tiendas.length },
+                { id: 'DB_UNIDADES', label: '🚚 Catálogo Unidades', count: unidades.length },
                 { id: 'DB_HIST_ENTREGAS', label: '📦 Historial Entregas', count: historialEntregas.length },
                 { id: 'DB_HIST_RECOLECCIONES', label: '🚚 Historial Recolecciones', count: historialRecolecciones.length }
               ].map(catalog => {
@@ -1120,6 +1133,486 @@ export const Admin: React.FC = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'AUDITORIA_UNIDADES' && (() => {
+        const calculateLogsStats = () => {
+          let totalKms = 0;
+          let totalLiters = 0;
+          let totalCost = 0;
+
+          // Group kilometrajes by unit
+          const unitGroups: { [unitId: string]: KilometrajeRegistro[] } = {};
+          kilometrajes.forEach(k => {
+            if (!k.unidadId) return;
+            if (!unitGroups[k.unidadId]) {
+              unitGroups[k.unidadId] = [];
+            }
+            unitGroups[k.unidadId].push(k);
+          });
+
+          // For each unit, sort logs chronologically and calculate distance differences
+          Object.keys(unitGroups).forEach(unitId => {
+            const sorted = unitGroups[unitId]
+              .filter(k => k.kmValue !== undefined && k.kmValue !== null)
+              .sort((a, b) => a.fecha.localeCompare(b.fecha));
+            
+            const unit = unidades.find(u => u.id === unitId);
+            const rendimiento = unit?.rendimiento || 10.0;
+            const precio = unit?.combustiblePrecio || 24.50;
+
+            for (let i = 0; i < sorted.length - 1; i++) {
+              const currentLog = sorted[i];
+              const nextLog = sorted[i + 1];
+              const diff = nextLog.kmValue - currentLog.kmValue;
+              if (diff > 0) {
+                totalKms += diff;
+                const liters = diff / rendimiento;
+                totalLiters += liters;
+                totalCost += liters * precio;
+              }
+            }
+          });
+
+          return { totalKms, totalLiters, totalCost };
+        };
+
+        const stats = calculateLogsStats();
+
+        const getLogDistanceDetails = (log: KilometrajeRegistro) => {
+          if (!log.unidadId || log.kmValue === undefined || log.kmValue === null) {
+            return { distance: null, liters: null, cost: null };
+          }
+          const unitLogs = kilometrajes
+            .filter(k => k.unidadId === log.unidadId && k.kmValue !== undefined && k.kmValue !== null)
+            .sort((a, b) => a.fecha.localeCompare(b.fecha));
+          
+          // Find index in sorted list
+          const index = unitLogs.findIndex(k => k.id === log.id);
+          if (index === -1 || index === unitLogs.length - 1) {
+            // No next reading exists yet (it's the latest, current route)
+            return { distance: null, liters: null, cost: null };
+          }
+          const nextLog = unitLogs[index + 1];
+          const distance = nextLog.kmValue - log.kmValue;
+          if (distance < 0) {
+            return { distance: 0, liters: 0, cost: 0, error: 'Reversa' };
+          }
+          
+          const unit = unidades.find(u => u.id === log.unidadId);
+          const rendimiento = unit?.rendimiento || 10.0;
+          const precio = unit?.combustiblePrecio || 24.50;
+          const liters = distance / rendimiento;
+          const cost = liters * precio;
+          
+          return { distance, liters, cost };
+        };
+
+        return (
+          <div className="space-y-6 animate-fade-in text-slate-100">
+            {/* Top Banner */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h3 className="text-teal-400 font-extrabold text-lg uppercase tracking-wider flex items-center gap-2 font-display">
+                  <Activity size={20} className="text-teal-400 animate-pulse" /> Auditoría de Unidades y Rendimiento
+                </h3>
+                <p className="text-slate-400 text-xs max-w-3xl leading-relaxed">
+                  Supervise y analice el kilometraje real de cada unidad mediante lecturas automáticas por Inteligencia Artificial (Gemini OCR). 
+                  Compare los recorridos interdiarios, estime el gasto exacto de combustible y gestione la configuración de rendimiento de la flota en tiempo real.
+                </p>
+              </div>
+              
+              {/* Action buttons */}
+              <div className="flex gap-2 shrink-0">
+                <button 
+                  onClick={() => {
+                    Swal.fire({
+                      title: 'Añadir Nueva Unidad Camioneta',
+                      html: `
+                        <div class="text-left space-y-3 font-sans p-2">
+                          <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase">ID de Unidad / Nombre</label>
+                            <input id="swal-unit-id" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" placeholder="ej. Camioneta 5" value="Camioneta ${unidades.length + 1}">
+                          </div>
+                          <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase">Número de Placa</label>
+                            <input id="swal-unit-placa" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" placeholder="ej. JAL-8822" />
+                          </div>
+                          <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase">Rendimiento Estimado (km/Lt)</label>
+                            <input id="swal-unit-rendimiento" type="number" step="0.1" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" placeholder="ej. 10.5" />
+                          </div>
+                          <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase">Precio Combustible Promedio ($/Lt)</label>
+                            <input id="swal-unit-precio" type="number" step="0.1" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" placeholder="ej. 24.50" value="24.50" />
+                          </div>
+                        </div>
+                      `,
+                      background: '#0d1b2a',
+                      color: '#fff',
+                      showCancelButton: true,
+                      confirmButtonText: 'Guardar Unidad',
+                      confirmButtonColor: '#0f766e',
+                      cancelButtonText: 'Cancelar',
+                      preConfirm: () => {
+                        const idVal = (document.getElementById('swal-unit-id') as HTMLInputElement).value.trim();
+                        const placaVal = (document.getElementById('swal-unit-placa') as HTMLInputElement).value.trim();
+                        const rendVal = Number((document.getElementById('swal-unit-rendimiento') as HTMLInputElement).value);
+                        const precioVal = Number((document.getElementById('swal-unit-precio') as HTMLInputElement).value);
+                        
+                        if (!idVal || !placaVal) {
+                          Swal.showValidationMessage('ID de Unidad y Placa son obligatorios');
+                          return false;
+                        }
+                        if (isNaN(rendVal) || rendVal <= 0) {
+                          Swal.showValidationMessage('Rendimiento debe ser un número positivo');
+                          return false;
+                        }
+                        return { id: idVal, placa: placaVal, rendimiento: rendVal, combustiblePrecio: precioVal };
+                      }
+                    }).then((result) => {
+                      if (result.isConfirmed && result.value) {
+                        const newUnit = result.value;
+                        // check duplicate
+                        if (unidades.some(u => u.id === newUnit.id)) {
+                          Swal.fire('Error', 'Ya existe una unidad con ese ID/Nombre', 'error');
+                          return;
+                        }
+                        const nuevas = [...unidades, newUnit];
+                        const res = reemplazarTablaDirecta('DB_UNIDADES', nuevas);
+                        if (res.success) {
+                          Swal.fire({ icon: 'success', title: 'Unidad Creada', text: 'Se ha añadido la nueva camioneta al catálogo.', background: '#0d1b2a', color: '#fff', timer: 1500 });
+                        } else {
+                          Swal.fire('Error', res.error, 'error');
+                        }
+                      }
+                    });
+                  }}
+                  className="bg-teal-755 hover:bg-teal-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition shadow"
+                >
+                  <Plus size={14} /> Añadir Camioneta
+                </button>
+              </div>
+            </div>
+
+            {/* Stats Cards Dashboard */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Camionetas Activas</span>
+                  <span className="block text-2xl font-black font-display text-slate-100">{unidades.length} u.</span>
+                </div>
+                <div className="bg-teal-950/40 border border-teal-900/60 p-3 rounded-lg text-teal-400 animate-fade-in">
+                  <Truck size={20} />
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Lecturas Odo Totales</span>
+                  <span className="block text-2xl font-black font-display text-slate-100">{kilometrajes.length} reg.</span>
+                </div>
+                <div className="bg-indigo-950/40 border border-indigo-900/60 p-3 rounded-lg text-indigo-400 animate-fade-in">
+                  <Camera size={20} />
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Kms Recorridos Totales</span>
+                  <span className="block text-2xl font-black font-display text-slate-100">{stats.totalKms.toLocaleString()} km</span>
+                </div>
+                <div className="bg-emerald-950/40 border border-emerald-900/60 p-3 rounded-lg text-emerald-400 animate-fade-in">
+                  <ArrowRight size={20} />
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Costo de Combustible</span>
+                  <span className="block text-2xl font-black font-display text-emerald-400">${stats.totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg text-emerald-500 animate-fade-in">
+                  <DollarSign size={20} />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Units list panel (Left) */}
+              <div className="lg:col-span-1 space-y-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="border-b border-slate-800 pb-3">
+                    <h4 className="font-extrabold text-slate-200 text-xs uppercase tracking-wider flex items-center gap-1.5 font-display text-amber-500">
+                      <Truck size={14} /> Catálogo de Flotilla y Rendimientos
+                    </h4>
+                    <p className="text-slate-400 text-[10px] mt-0.5">Gestione y edite las especificaciones de cada camioneta de reparto.</p>
+                  </div>
+
+                  <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+                    {unidades.map(unit => {
+                      return (
+                        <div key={unit.id} className="bg-slate-950 border border-slate-850 rounded-xl p-4 space-y-3 relative overflow-hidden group hover:border-slate-700 transition duration-150">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="block font-black text-slate-100 text-sm tracking-tight">{unit.id}</span>
+                              <span className="font-mono text-[10px] bg-indigo-950/70 border border-indigo-900/40 text-indigo-400 px-2 py-0.5 rounded font-extrabold uppercase mt-1 inline-block">Placa: {unit.placa}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5 opacity-80 group-hover:opacity-100 transition">
+                              <button
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: `Editar ${unit.id}`,
+                                    html: `
+                                      <div class="text-left space-y-3 font-sans p-2">
+                                        <div>
+                                          <label class="block text-xs font-bold text-slate-400 uppercase">Número de Placa</label>
+                                          <input id="swal-edit-placa" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" value="${unit.placa || ''}" />
+                                        </div>
+                                        <div>
+                                          <label class="block text-xs font-bold text-slate-400 uppercase">Rendimiento (km/Lt)</label>
+                                          <input id="swal-edit-rendimiento" type="number" step="0.1" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" value="${unit.rendimiento || 10.0}" />
+                                        </div>
+                                        <div>
+                                          <label class="block text-xs font-bold text-slate-400 uppercase">Precio Combustible ($/Lt)</label>
+                                          <input id="swal-edit-precio" type="number" step="0.1" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded px-3 py-2 mt-1 focus:outline-none" value="${unit.combustiblePrecio || 24.50}" />
+                                        </div>
+                                      </div>
+                                    `,
+                                    background: '#0d1b2a',
+                                    color: '#fff',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Aplicar Cambios',
+                                    confirmButtonColor: '#0f766e',
+                                    cancelButtonText: 'Cancelar',
+                                    preConfirm: () => {
+                                      const placaVal = (document.getElementById('swal-edit-placa') as HTMLInputElement).value.trim();
+                                      const rendVal = Number((document.getElementById('swal-edit-rendimiento') as HTMLInputElement).value);
+                                      const precioVal = Number((document.getElementById('swal-edit-precio') as HTMLInputElement).value);
+                                      
+                                      if (!placaVal) {
+                                        Swal.showValidationMessage('La placa es obligatoria');
+                                        return false;
+                                      }
+                                      if (isNaN(rendVal) || rendVal <= 0) {
+                                        Swal.showValidationMessage('Rendimiento debe ser mayor a 0');
+                                        return false;
+                                      }
+                                      return { placa: placaVal, rendimiento: rendVal, combustiblePrecio: precioVal };
+                                    }
+                                  }).then((result) => {
+                                    if (result.isConfirmed && result.value) {
+                                      const updated = {
+                                        ...unit,
+                                        ...result.value
+                                      };
+                                      const nuevas = unidades.map(u => u.id === unit.id ? updated : u);
+                                      const res = reemplazarTablaDirecta('DB_UNIDADES', nuevas);
+                                      if (res.success) {
+                                        Swal.fire({ icon: 'success', title: 'Unidad Actualizada', background: '#0d1b2a', color: '#fff', timer: 1500 });
+                                      } else {
+                                        Swal.fire('Error', res.error, 'error');
+                                      }
+                                    }
+                                  });
+                                }}
+                                className="p-1 px-2 border border-slate-850 hover:border-slate-700 bg-slate-900 rounded-lg text-slate-400 hover:text-teal-400 text-[10px] uppercase font-bold tracking-wider inline-flex items-center gap-1 cursor-pointer transition hover:bg-slate-900/80"
+                                title="Editar especificaciones"
+                              >
+                                <Edit2 size={10} /> Editar
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  Swal.fire({
+                                    title: '¿Eliminar Camioneta?',
+                                    text: `Esta acción removerá a ${unit.id} (${unit.placa}) del catálogo de unidades activas.`,
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Sí, eliminar',
+                                    cancelButtonText: 'No, cancelar',
+                                    background: '#0d1b2a',
+                                    color: '#fff',
+                                    confirmButtonColor: '#e11d48'
+                                  }).then((result) => {
+                                    if (result.isConfirmed) {
+                                      const nuevas = unidades.filter(u => u.id !== unit.id);
+                                      const res = reemplazarTablaDirecta('DB_UNIDADES', nuevas);
+                                      if (res.success) {
+                                        Swal.fire({ icon: 'success', title: 'Unidad Eliminada', text: 'Se actualizó el catálogo de camionetas.', background: '#0d1b2a', color: '#fff', timer: 1500 });
+                                      } else {
+                                        Swal.fire('Error', res.error, 'error');
+                                      }
+                                    }
+                                  });
+                                }}
+                                className="p-1 border border-slate-850 hover:border-rose-900 bg-slate-900 rounded-lg text-slate-500 hover:text-rose-400 cursor-pointer transition hover:bg-rose-955/25"
+                                title="Eliminar camioneta"
+                              >
+                                <Trash2 size={10} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-[11px] border-t border-slate-900 pt-3">
+                            <div className="space-y-0.5">
+                              <span className="text-slate-500 block uppercase font-bold text-[9px] tracking-wider">Rendimiento</span>
+                              <span className="font-extrabold text-slate-300 font-mono flex items-center gap-1">
+                                <Fuel size={11} className="text-slate-400" /> {unit.rendimiento} km/Lt
+                              </span>
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <span className="text-slate-500 block uppercase font-bold text-[9px] tracking-wider">Combustible Promedio</span>
+                              <span className="font-extrabold text-slate-300 font-mono text-emerald-400">
+                                ${unit.combustiblePrecio} / Lt
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {unidades.length === 0 && (
+                      <div className="text-center py-8 text-slate-500 text-xs italic">
+                        No hay camionetas registradas. Añada una para comenzar.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Odometer logs timeline (Right) */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="border-b border-slate-800 pb-3">
+                    <h4 className="font-extrabold text-slate-200 text-xs uppercase tracking-wider flex items-center gap-1.5 font-display text-indigo-400">
+                      <Camera size={14} /> Bitácora de Auditorías de Odómetro (IA Gemini)
+                    </h4>
+                    <p className="text-slate-400 text-[10px] mt-0.5">Lista cronológica de fotos y kilometrajes validados interdiarios.</p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-950/60 font-mono">
+                          <th className="py-3 px-3">Unidad e Info.</th>
+                          <th className="py-3 px-3">Operador / Fecha</th>
+                          <th className="py-3 px-3">Lectura Odo</th>
+                          <th className="py-3 px-3 text-center">Foto</th>
+                          <th className="py-3 px-3 text-right">Recorrido & Gasto</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-850 text-xs text-slate-300">
+                        {kilometrajes
+                          .slice()
+                          .sort((a,b) => b.fecha.localeCompare(a.fecha))
+                          .map(log => {
+                            const unit = unidades.find(u => u.id === log.unidadId);
+                            const statsDetails = getLogDistanceDetails(log);
+                            
+                            return (
+                              <tr key={log.id} className="hover:bg-slate-950/50 transition border-b border-slate-850/40">
+                                <td className="py-3.5 px-3 pr-2">
+                                  <div className="space-y-1">
+                                    <span className="font-black text-slate-100 block text-xs">{log.unidadId || '—'}</span>
+                                    {unit ? (
+                                      <span className="text-[9px] text-slate-400 font-extrabold font-mono uppercase bg-slate-950 border border-slate-850 px-1.5 py-0.5 rounded">
+                                        Placa: {unit.placa}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] text-slate-500 font-mono italic">Sin configurar</span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="py-3.5 px-3">
+                                  <div className="space-y-0.5">
+                                    <span className="font-bold text-slate-300 block">{log.chofer || 'Desconocido'}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">{log.fecha ? formatedDisplayDate(log.fecha) : '—'}</span>
+                                  </div>
+                                </td>
+
+                                <td className="py-3.5 px-3">
+                                  <span className="font-black text-slate-100 font-mono text-[13px]">
+                                    {log.kmValue !== undefined ? `${log.kmValue.toLocaleString()} km` : 'Sin OCR'}
+                                  </span>
+                                </td>
+
+                                <td className="py-3.5 px-3 text-center">
+                                  {log.foto ? (
+                                    <button
+                                      onClick={() => {
+                                        Swal.fire({
+                                          title: `Evidencia de Odómetro: ${log.unidadId || 'Sin ID'}`,
+                                          html: `
+                                            <div class="space-y-2 text-left p-1 font-sans">
+                                              <div class="grid grid-cols-2 gap-2 text-xs text-slate-400 border-b border-slate-800 pb-2 mb-2 font-mono">
+                                                <div><strong>Chofer:</strong> ${log.chofer}</div>
+                                                <div><strong>Fecha:</strong> ${log.fecha}</div>
+                                                <div><strong>Kilometraje:</strong> ${log.kmValue ? log.kmValue.toLocaleString() : '—'} km</div>
+                                                <div><strong>Unidad:</strong> ${log.unidadId || '—'}</div>
+                                              </div>
+                                              <div class="flex justify-center bg-slate-900 border border-slate-800 p-2 rounded">
+                                                <img src="${log.foto}" class="max-w-full max-h-[480px] object-contain rounded" alt="Odometer visual proof" />
+                                              </div>
+                                            </div>
+                                          `,
+                                          background: '#0d1b2a',
+                                          color: '#fff',
+                                          confirmButtonText: 'Cerrar Vista',
+                                          confirmButtonColor: '#0f766e',
+                                          width: 580
+                                        });
+                                      }}
+                                      className="p-1 px-2 bg-slate-950 border border-slate-850 hover:border-slate-700 rounded-lg text-slate-400 hover:text-amber-400 transition cursor-pointer inline-flex items-center gap-1"
+                                    >
+                                      <Eye size={12} />
+                                      <span className="text-[10px] font-black uppercase tracking-wider">Ver Foto</span>
+                                    </button>
+                                  ) : (
+                                    <span className="text-slate-600 text-[10px] italic">Sin foto</span>
+                                  )}
+                                </td>
+
+                                <td className="py-3.5 px-3 text-right">
+                                  {statsDetails.distance === null ? (
+                                    <span className="text-[8.5px] font-black uppercase tracking-widest bg-yellow-955/30 border border-yellow-905/40 text-yellow-500 px-2.5 py-0.5 rounded-full inline-block animate-pulse">
+                                      En curso 🚙
+                                    </span>
+                                  ) : statsDetails.error ? (
+                                    <span className="text-[10px] font-bold text-rose-450 block">{statsDetails.error}</span>
+                                  ) : (
+                                    <div className="space-y-0.5">
+                                      <span className="font-extrabold font-mono text-slate-100 text-xs block">
+                                        +{statsDetails.distance} km
+                                      </span>
+                                      <span className="text-[9.5px] text-emerald-400 font-extrabold block font-mono">
+                                        ⛽ {statsDetails.liters?.toFixed(1)} Lts (${statsDetails.cost?.toFixed(2)})
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        
+                        {kilometrajes.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-center py-10 text-slate-500 text-xs italic">
+                              No se han registrado auditorías de kilometraje hoy.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* EDIT MODAL PEDIDOS */}
       {pedModalOpen && editingPedido && (

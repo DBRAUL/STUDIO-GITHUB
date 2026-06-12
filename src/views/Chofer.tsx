@@ -21,7 +21,8 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
     sincronizarPendientesLocales,
     clearOfflineQueue,
     kilometrajes,
-    guardarKilometrajeHoy
+    guardarKilometrajeHoy,
+    unidades
   } = useLogistika();
 
   const [internalActiveChofer, setInternalActiveChofer] = useState<string>(choferes[0]?.nombre || 'Elias');
@@ -33,6 +34,9 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   const [mileageTaskToStart, setMileageTaskToStart] = useState<any | null>(null);
   const [mileageBase64, setMileageBase64] = useState<string | null>(null);
   const [savingMileage, setSavingMileage] = useState(false);
+  const [selectedUnidadId, setSelectedUnidadId] = useState<string>('');
+  const [ocrMileage, setOcrMileage] = useState<string>('');
+  const [isOcrProcessing, setIsOcrProcessing] = useState<boolean>(false);
 
   // Active inputs inside delivery completions
   const [completionTicketId, setCompletionTicketId] = useState<string | null>(null);
@@ -41,6 +45,29 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
   const [capturedFotos, setCapturedFotos] = useState<string[]>([]);
 
   const activeTaskList = obtenerTareasChofer(activeChofer);
+
+  const runOdometerOcr = async (base64Str: string) => {
+    setIsOcrProcessing(true);
+    setOcrMileage('');
+    try {
+      const response = await fetch('/api/gemini/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Str })
+      });
+      if (!response.ok) {
+        throw new Error('Server returned error status');
+      }
+      const data = await response.json();
+      if (data && (typeof data.kmValue === 'number' || data.kmValue)) {
+        setOcrMileage(String(data.kmValue));
+      }
+    } catch (err) {
+      console.error("Error during odometer OCR:", err);
+    } finally {
+      setIsOcrProcessing(false);
+    }
+  };
 
   const handleToggleOffline = () => {
     setOfflineSimulated(!offlineSimulated);
@@ -647,7 +674,12 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
       {/* ODÓMETRO / MILEAGE ENTRY MODAL */}
       {mileageTaskToStart && (
         <div 
-          onClick={(e) => { if (e.target === e.currentTarget) setMileageTaskToStart(null); }}
+          onClick={(e) => { if (e.target === e.currentTarget) {
+            setMileageTaskToStart(null);
+            setSelectedUnidadId('');
+            setOcrMileage('');
+            setMileageBase64(null);
+          }}}
           className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5 mt-24 mb-8 md:my-8 cursor-default overflow-hidden flex flex-col justify-between">
@@ -655,23 +687,45 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
               <h3 className="font-bold text-slate-100 text-xs uppercase tracking-widest text-amber-500">
                 Primer Viaje del Día: Kilometraje
               </h3>
-              <button onClick={() => setMileageTaskToStart(null)} className="text-slate-400 hover:text-slate-100">
+              <button onClick={() => {
+                setMileageTaskToStart(null);
+                setSelectedUnidadId('');
+                setOcrMileage('');
+                setMileageBase64(null);
+              }} className="text-slate-400 hover:text-slate-100">
                 <X size={18} />
               </button>
             </div>
 
             <div className="space-y-4">
               <p className="text-xs text-slate-300 leading-relaxed text-left">
-                Hola, <strong>{activeChofer}</strong>. Este es tu primer viaje del día actual. Por políticas de la empresa, debes tomar una fotografía legible del <strong>kilometraje de la camioneta/camión</strong> antes de iniciar recorrido.
+                Hola, <strong>{activeChofer}</strong>. Este es tu primer viaje del día actual. Por políticas de la empresa, debes seleccionar la camioneta y tomar una fotografía legible del <strong>odómetro (kilometraje)</strong> antes de iniciar recorrido.
               </p>
+
+              {/* Vehicle Selection dropdown */}
+              <div className="space-y-1.5 text-left">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Selecciona la Camioneta / Unidad <span className="text-amber-500">*</span>
+                </label>
+                <select
+                  value={selectedUnidadId}
+                  onChange={(e) => setSelectedUnidadId(e.target.value)}
+                  className="w-full bg-slate-950 text-slate-200 text-xs border border-slate-800 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-bold"
+                >
+                  <option value="">-- Seleccionar Camioneta --</option>
+                  {unidades.map(u => (
+                    <option key={u.id} value={u.id}>{u.id} - {u.placa}</option>
+                  ))}
+                </select>
+              </div>
 
               <div className="bg-slate-950 border border-dashed border-slate-800 rounded-xl p-4 flex flex-col gap-3">
                 {!mileageBase64 ? (
                   <div className="flex flex-col items-center justify-center text-center py-6 gap-2">
-                    <Truck size={36} className="text-slate-600" />
+                    <Truck size={36} className="text-slate-600 animate-pulse" />
                     <div>
                       <p className="text-[11px] text-slate-400 font-bold">Foto del Odómetro/Kilometraje</p>
-                      <p className="text-[9px] text-slate-500 mt-0.5">La foto se guardará ligada a tu cuenta hoy</p>
+                      <p className="text-[9px] text-slate-500 mt-0.5">La foto se enviará para lectura artificial automática</p>
                     </div>
                   </div>
                 ) : (
@@ -683,7 +737,10 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     />
                     <button 
                       type="button"
-                      onClick={() => setMileageBase64(null)}
+                      onClick={() => {
+                        setMileageBase64(null);
+                        setOcrMileage('');
+                      }}
                       className="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full p-1.5 cursor-pointer shadow-lg outline-none"
                       title="Quitar foto"
                     >
@@ -716,6 +773,8 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                       try {
                         const base64 = await compressBase64Image(file);
                         setMileageBase64(base64);
+                        // Trigger AI OCR processing
+                        runOdometerOcr(base64);
                       } catch (err) {
                         console.error("Error compressing mileage photo:", err);
                         Swal.fire({
@@ -732,11 +791,59 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                   }} 
                 />
               </div>
+
+              {/* OCR Extracted mileage review section */}
+              {mileageBase64 && (
+                <div className="space-y-2 text-left animate-fade-in">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Kilometraje Registrado <span className="text-amber-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="Ingrese kilómetros mostrados"
+                      value={ocrMileage}
+                      onChange={(e) => setOcrMileage(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-100 text-xs border border-slate-800 rounded-lg p-2.5 pr-20 focus:outline-none focus:ring-1 focus:ring-teal-500 font-mono font-bold"
+                      disabled={isOcrProcessing}
+                    />
+                    {isOcrProcessing && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[8px] text-teal-400 font-bold font-mono uppercase bg-slate-900 border border-teal-850 px-1.5 py-0.5 rounded">
+                        <RefreshCw size={9} className="animate-spin text-teal-400" />
+                        OCR AI...
+                      </div>
+                    )}
+                  </div>
+                  {isOcrProcessing ? (
+                    <p className="text-[10px] text-teal-400 font-bold flex items-center gap-1 font-mono">
+                      ✨ Gemini está procesando la lectura del odómetro...
+                    </p>
+                  ) : ocrMileage ? (
+                    <p className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 font-mono">
+                      ✓ Kilometraje extraído por Gemini AI. Confirma o corrige si es necesario.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-yellow-500 font-bold flex items-center gap-1 font-mono">
+                      ⚠️ No detectado automáticamente. Digiite los kilómetros manualmente por favor.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-slate-800 mt-4">
               <button 
                 onClick={async () => {
+                  if (!selectedUnidadId) {
+                    Swal.fire({
+                      icon: 'warning',
+                      title: 'Camioneta Requerida',
+                      text: 'Por favor, selecciona la unidad o camioneta que vas a conducir hoy.',
+                      background: '#0d1b2a',
+                      color: '#fff'
+                    });
+                    return;
+                  }
                   if (!mileageBase64) {
                     Swal.fire({
                       icon: 'warning',
@@ -747,13 +854,25 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     });
                     return;
                   }
+                  if (!ocrMileage || Number(ocrMileage) <= 0) {
+                    Swal.fire({
+                      icon: 'warning',
+                      title: 'Kilometraje Requerido',
+                      text: 'Por favor ingresa un número de kilómetros válido mayor a cero.',
+                      background: '#0d1b2a',
+                      color: '#fff'
+                    });
+                    return;
+                  }
                   setSavingMileage(true);
                   const todayStr = getMexicoCityDateStr();
-                  const saved = await guardarKilometrajeHoy(activeChofer, todayStr, mileageBase64);
+                  const saved = await guardarKilometrajeHoy(activeChofer, todayStr, mileageBase64, selectedUnidadId, Number(ocrMileage));
                   if (saved) {
                     const task = mileageTaskToStart;
                     setMileageTaskToStart(null);
                     setMileageBase64(null);
+                    setSelectedUnidadId('');
+                    setOcrMileage('');
                     setSavingMileage(false);
                     // Now proceed normally to starting the route!
                     proceedStartRoute(task);
@@ -768,9 +887,9 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     });
                   }
                 }}
-                disabled={savingMileage || !mileageBase64}
+                disabled={savingMileage || !mileageBase64 || !selectedUnidadId || !ocrMileage || isOcrProcessing}
                 className={`w-full font-black py-3 rounded-lg text-xs uppercase tracking-widest transition cursor-pointer ${
-                  !mileageBase64 || savingMileage
+                  !mileageBase64 || !selectedUnidadId || !ocrMileage || savingMileage || isOcrProcessing
                     ? 'bg-slate-850 border border-slate-800 text-slate-500 cursor-not-allowed'
                     : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow shadow-amber-950/20'
                 }`}
