@@ -5,8 +5,8 @@
 
 import React, { useState } from 'react';
 import { useLogistika, formatedDisplayDate, formatedDisplayDateTime, normalizarFecha } from '../context/LogistikaContext';
-import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig } from '../types';
-import { Truck, MapPin, Search, Plus, Settings, Eye, Clock, Calendar, CheckCircle2, ChevronRight, X, Edit2, Trash2, Camera, FileText } from 'lucide-react';
+import { Pedido, Recoleccion, ChoferConfig, ProveedorConfig, TiendaConfig, UnidadConfig } from '../types';
+import { Truck, MapPin, Search, Plus, Settings, Eye, Clock, Calendar, CheckCircle2, ChevronRight, X, Edit2, Trash2, Camera, FileText, Fuel, DollarSign } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export const Logistica: React.FC = () => {
@@ -16,6 +16,8 @@ export const Logistica: React.FC = () => {
     choferes,
     proveedores,
     tiendas,
+    unidades,
+    reemplazarTablaDirecta,
     guardarServicioConOrden,
     obtenerSiguienteOrdenGlobal,
     crearNuevaRecoleccion,
@@ -31,7 +33,7 @@ export const Logistica: React.FC = () => {
 
   // Settings dropdown
   const [showSettings, setShowSettings] = useState(false);
-  const [activeCatalog, setActiveCatalog] = useState<'CHOFERES' | 'PROVEEDORES' | 'TIENDAS' | null>(null);
+  const [activeCatalog, setActiveCatalog] = useState<'CHOFERES' | 'PROVEEDORES' | 'TIENDAS' | 'UNIDADES' | null>(null);
 
   // Assignment Modal States
   const [entregasModalOpen, setEntregasModalOpen] = useState(false);
@@ -68,6 +70,9 @@ export const Logistica: React.FC = () => {
   const [catalogsNewName, setCatalogsNewName] = useState('');
   const [catalogsNewAddress, setCatalogsNewAddress] = useState('');
   const [catalogsNewRefOrSiglas, setCatalogsNewRefOrSiglas] = useState('');
+  const [catalogsNewPlaca, setCatalogsNewPlaca] = useState('');
+  const [catalogsNewRendimiento, setCatalogsNewRendimiento] = useState('10.0');
+  const [catalogsNewPrecioCombustible, setCatalogsNewPrecioCombustible] = useState('24.50');
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
 
   // Filtering list based on sheet logic
@@ -292,19 +297,41 @@ export const Logistica: React.FC = () => {
         direccion: catalogsNewAddress,
         siglas: catalogsNewRefOrSiglas
       });
+    } else if (activeCatalog === 'UNIDADES') {
+      if (!catalogsNewPlaca.trim()) return;
+      if (unidades.some(u => u.id.toLowerCase() === catalogsNewName.trim().toLowerCase())) {
+        Swal.fire('Error', 'Ya existe una unidad con ese ID/Nombre', 'error');
+        return;
+      }
+      const newU: UnidadConfig = {
+        id: catalogsNewName.trim(),
+        placa: catalogsNewPlaca.trim(),
+        rendimiento: Number(catalogsNewRendimiento) || 10.0,
+        combustiblePrecio: Number(catalogsNewPrecioCombustible) || 24.50
+      };
+      const res = reemplazarTablaDirecta('DB_UNIDADES', [...unidades, newU]);
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: 'Unidad Creada', text: 'Se ha añadido la nueva unidad.', background: '#0d1b2a', color: '#fff', timer: 1500 });
+      }
     }
 
     setCatalogsNewName('');
     setCatalogsNewAddress('');
     setCatalogsNewRefOrSiglas('');
+    setCatalogsNewPlaca('');
+    setCatalogsNewRendimiento('10.0');
+    setCatalogsNewPrecioCombustible('24.50');
     setEditingItemIdx(null);
   };
 
   const handleCatalogEditClick = (idx: number, item: any) => {
     setEditingItemIdx(idx);
-    setCatalogsNewName(item.nombre || item || '');
+    setCatalogsNewName(item.nombre || item.id || item || '');
     setCatalogsNewAddress(item.direccion || '');
     setCatalogsNewRefOrSiglas(item.referencia || item.siglas || '');
+    setCatalogsNewPlaca(item.placa || '');
+    setCatalogsNewRendimiento(item.rendimiento !== undefined ? String(item.rendimiento) : '10.0');
+    setCatalogsNewPrecioCombustible(item.combustiblePrecio !== undefined ? String(item.combustiblePrecio) : '24.50');
   };
 
   const handleCatalogUpdateClick = (idx: number) => {
@@ -325,11 +352,27 @@ export const Logistica: React.FC = () => {
         direccion: catalogsNewAddress,
         siglas: catalogsNewRefOrSiglas
       });
+    } else if (activeCatalog === 'UNIDADES') {
+      const originalId = unidades[idx].id;
+      const updatedU: UnidadConfig = {
+        id: catalogsNewName.trim() || originalId,
+        placa: catalogsNewPlaca.trim(),
+        rendimiento: Number(catalogsNewRendimiento) || 10.0,
+        combustiblePrecio: Number(catalogsNewPrecioCombustible) || 24.50
+      };
+      const nuevas = unidades.map((u, i) => i === idx ? updatedU : u);
+      const res = reemplazarTablaDirecta('DB_UNIDADES', nuevas);
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: 'Unidad Actualizada', text: 'Se ha guardado los cambios del vehículo.', background: '#0d1b2a', color: '#fff', timer: 1500 });
+      }
     }
 
     setCatalogsNewName('');
     setCatalogsNewAddress('');
     setCatalogsNewRefOrSiglas('');
+    setCatalogsNewPlaca('');
+    setCatalogsNewRendimiento('10.0');
+    setCatalogsNewPrecioCombustible('24.50');
     setEditingItemIdx(null);
   };
 
@@ -344,6 +387,12 @@ export const Logistica: React.FC = () => {
       eliminarProveedor(fila);
     } else if (activeCatalog === 'TIENDAS') {
       eliminarTienda(fila);
+    } else if (activeCatalog === 'UNIDADES') {
+      const nuevas = unidades.filter((_, i) => i !== idx);
+      const res = reemplazarTablaDirecta('DB_UNIDADES', nuevas);
+      if (res.success) {
+        Swal.fire({ icon: 'success', title: 'Unidad Eliminada', background: '#0d1b2a', color: '#fff', timer: 1500 });
+      }
     }
   };
 
@@ -426,6 +475,12 @@ export const Logistica: React.FC = () => {
                   className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800 flex items-center gap-2"
                 >
                   🏪 Tiendas
+                </button>
+                <button 
+                  onClick={() => { setActiveCatalog('UNIDADES'); setShowSettings(false); }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800 flex items-center gap-2"
+                >
+                  🚚 Unidades / Camionetas
                 </button>
               </div>
             )}
@@ -1222,33 +1277,63 @@ export const Logistica: React.FC = () => {
               <h4 className="text-xs uppercase font-extrabold text-teal-400 tracking-wider">
                 {editingItemIdx !== null ? 'Modificar Registro Seleccionado' : 'Añadir Nuevo Registro al Catálogo'}
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className={`grid grid-cols-1 ${activeCatalog === 'UNIDADES' ? 'md:grid-cols-4' : 'md:grid-cols-3'} gap-3`}>
                 <input 
                   type="text" 
-                  placeholder={activeCatalog === 'CHOFERES' ? 'Nombre del Chofer' : activeCatalog === 'PROVEEDORES' ? 'Nombre del Proveedor' : 'Nombre de la Tienda'}
+                  placeholder={activeCatalog === 'CHOFERES' ? 'Nombre del Chofer' : activeCatalog === 'UNIDADES' ? 'ID/Nombre de Unidad (Ej: Camioneta 5)' : activeCatalog === 'PROVEEDORES' ? 'Nombre del Proveedor' : 'Nombre de la Tienda'}
                   value={catalogsNewName}
                   onChange={(e) => setCatalogsNewName(e.target.value)}
                   className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
                 />
 
-                {activeCatalog !== 'CHOFERES' && (
-                  <input 
-                    type="text" 
-                    placeholder="Dirección Física Completa"
-                    value={catalogsNewAddress}
-                    onChange={(e) => setCatalogsNewAddress(e.target.value)}
-                    className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
-                  />
-                )}
+                {activeCatalog === 'UNIDADES' ? (
+                  <>
+                    <input 
+                      type="text" 
+                      placeholder="Placa del Vehículo (Ej: JAL-1234)"
+                      value={catalogsNewPlaca}
+                      onChange={(e) => setCatalogsNewPlaca(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
+                    />
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      placeholder="Rendimiento (km/Lt)"
+                      value={catalogsNewRendimiento}
+                      onChange={(e) => setCatalogsNewRendimiento(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
+                    />
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      placeholder="Precio Combustible ($/Lt)"
+                      value={catalogsNewPrecioCombustible}
+                      onChange={(e) => setCatalogsNewPrecioCombustible(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
+                    />
+                  </>
+                ) : (
+                  <>
+                    {activeCatalog !== 'CHOFERES' && (
+                      <input 
+                        type="text" 
+                        placeholder="Dirección Física Completa"
+                        value={catalogsNewAddress}
+                        onChange={(e) => setCatalogsNewAddress(e.target.value)}
+                        className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
+                      />
+                    )}
 
-                {activeCatalog !== 'CHOFERES' && (
-                  <input 
-                    type="text" 
-                    placeholder={activeCatalog === 'PROVEEDORES' ? 'Referencias de ubicación' : 'Siglas (Ej: TIV)'}
-                    value={catalogsNewRefOrSiglas}
-                    onChange={(e) => setCatalogsNewRefOrSiglas(e.target.value)}
-                    className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
-                  />
+                    {activeCatalog !== 'CHOFERES' && (
+                      <input 
+                        type="text" 
+                        placeholder={activeCatalog === 'PROVEEDORES' ? 'Referencias de ubicación' : 'Siglas (Ej: TIV)'}
+                        value={catalogsNewRefOrSiglas}
+                        onChange={(e) => setCatalogsNewRefOrSiglas(e.target.value)}
+                        className="bg-slate-900 border border-slate-800 rounded-lg text-xs p-2.5 text-slate-100 focus:outline-none"
+                      />
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1262,7 +1347,15 @@ export const Logistica: React.FC = () => {
                       Actualizar
                     </button>
                     <button 
-                      onClick={() => { setEditingItemIdx(null); setCatalogsNewName(''); setCatalogsNewAddress(''); setCatalogsNewRefOrSiglas(''); }}
+                      onClick={() => { 
+                        setEditingItemIdx(null); 
+                        setCatalogsNewName(''); 
+                        setCatalogsNewAddress(''); 
+                        setCatalogsNewRefOrSiglas(''); 
+                        setCatalogsNewPlaca('');
+                        setCatalogsNewRendimiento('10.0');
+                        setCatalogsNewPrecioCombustible('24.50');
+                      }}
                       className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-4 py-2 rounded-lg text-xs cursor-pointer transition"
                     >
                       Cancelar
@@ -1287,6 +1380,13 @@ export const Logistica: React.FC = () => {
                   <tr className="border-b border-slate-800 text-slate-400 text-[10px] uppercase font-bold tracking-wider">
                     {activeCatalog === 'CHOFERES' ? (
                       <th className="py-2.5 px-3">Nombre del Chofer</th>
+                    ) : activeCatalog === 'UNIDADES' ? (
+                      <>
+                        <th className="py-2.5 px-3">ID de Unidad</th>
+                        <th className="py-2.5 px-3">Placa</th>
+                        <th className="py-2.5 px-3">Rendimiento (km/Lt)</th>
+                        <th className="py-2.5 px-3">Precio Combustible</th>
+                      </>
                     ) : activeCatalog === 'PROVEEDORES' ? (
                       <>
                         <th className="py-2.5 px-3">Proveedor</th>
@@ -1311,6 +1411,24 @@ export const Logistica: React.FC = () => {
                         <td className="py-3 px-3 text-center flex items-center justify-center gap-1.5">
                           <button onClick={() => handleCatalogEditClick(i, ch.nombre)} className="text-teal-400 hover:bg-teal-950/40 p-1.5 rounded"><Edit2 size={13} /></button>
                           <button onClick={() => handleCatalogDelete(i)} className="text-rose-400 hover:bg-rose-950/45 p-1.5 rounded"><Trash2 size={13} /></button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : activeCatalog === 'UNIDADES' ? (
+                    unidades.map((u, i) => (
+                      <tr key={u.id} className="hover:bg-slate-850/20">
+                        <td className="py-3 px-3 font-semibold text-slate-100 flex items-center gap-1.5">
+                          <Truck size={14} className="text-teal-400" />
+                          {u.id}
+                        </td>
+                        <td className="py-3 px-3 font-mono text-indigo-400 font-bold uppercase">{u.placa}</td>
+                        <td className="py-3 px-3 font-mono text-slate-200">⛽ {u.rendimiento} km/Lt</td>
+                        <td className="py-3 px-3 font-mono text-emerald-400">${u.combustiblePrecio} / Lt</td>
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button onClick={() => handleCatalogEditClick(i, u)} className="text-teal-400 hover:bg-teal-950/40 p-1.5 rounded" title="Editar"><Edit2 size={13} /></button>
+                            <button onClick={() => handleCatalogDelete(i)} className="text-rose-400 hover:bg-rose-950/45 p-1.5 rounded" title="Eliminar"><Trash2 size={13} /></button>
+                          </div>
                         </td>
                       </tr>
                     ))
