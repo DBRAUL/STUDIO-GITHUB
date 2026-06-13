@@ -22,6 +22,7 @@ async function startServer() {
         return res.status(400).json({ error: "No image provided" });
       }
 
+      console.log(`[OCR Server] Received image of length ${image.length}. Processing starts...`);
       let mimeType = "image/jpeg";
       let base64Data = image;
 
@@ -30,11 +31,17 @@ async function startServer() {
         if (match) {
           mimeType = match[1];
           base64Data = match[2];
+          console.log(`[OCR Server] Extracted mimeType: ${mimeType}, base64 length: ${base64Data.length}`);
+        } else {
+          console.warn("[OCR Server] image starts with 'data:' but regex match fell through.");
         }
+      } else {
+        console.log(`[OCR Server] Input image does not start with data URL prefix, assuming JPEG raw base64. length: ${base64Data.length}`);
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
+        console.error("[OCR Server] Missing GEMINI_API_KEY environment variable.");
         return res.status(500).json({ error: "GEMINI_API_KEY is not defined in the workspace secrets or environment." });
       }
 
@@ -55,9 +62,19 @@ async function startServer() {
       };
 
       const textPart = {
-        text: "This is a photograph of a vehicle's dashboard odometer. Carefully extract the total recorded mileage / odometer number. Ignore ambient numbers clock or trip distance (trip A/B) if they are smaller. We want the absolute main total mileage number. Extract and return it as an integer under 'kmValue' in JSON format.",
+        text: `You are an expert vehicle dashboard analyzer. Look closely at the image of the vehicle dashboard instrument. There might be a speedometer (typically a circular dial or numbers like 20, 40, 60, 80, 100, 120, 140, 160) and one or two odometers (which can be electronic digital LCD displays or analog mechanical rolling cylinders/drums).
+1. The main odometer tracks the total accumulated mileage of the vehicle and is usually a 5, 6, or 7-digit number (e.g., '151517').
+2. The trip odometer (sometimes located below or adjacent to the main odometer) is a shorter number (often 3 or 4 digits, e.g., '6536').
+
+Your task:
+- Identify and extract the MAIN TOTAL accumulated mileage number (which corresponds to total kilometers or miles).
+- Do not confuse it with speedometer markings (20, 40, 60, 80, 100, 120, etc.) or unit indicators (MPH, km/h).
+- Do not confuse it with the trip odometer (e.g., '6536'), which is usually shorter and placed below/above.
+- Extract only the digits of the main total odometer and return it as a pure integer under the 'kmValue' key in the required JSON structure.
+- If you see no legible main odometer reading, return null.`,
       };
 
+      console.log("[OCR Server] Calling Gemini API (gemini-3.5-flash)...");
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
         contents: { parts: [imagePart, textPart] },
@@ -76,10 +93,12 @@ async function startServer() {
       });
 
       const text = response.text || "{}";
+      console.log(`[OCR Server] Gemini response text: ${text}`);
       const parsed = JSON.parse(text);
+      console.log("[OCR Server] Parsed result:", parsed);
       return res.json(parsed);
     } catch (error: any) {
-      console.error("Gemini OCR server error: ", error);
+      console.error("[OCR Server] Gemini OCR server error: ", error);
       return res.status(500).json({ error: error?.message || "Error processing image through Gemini OCR" });
     }
   });
