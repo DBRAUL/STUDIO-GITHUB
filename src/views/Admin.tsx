@@ -1154,7 +1154,7 @@ export const Admin: React.FC = () => {
           Object.keys(unitGroups).forEach(unitId => {
             const sorted = unitGroups[unitId]
               .filter(k => k.kmValue !== undefined && k.kmValue !== null)
-              .sort((a, b) => a.fecha.localeCompare(b.fecha));
+              .sort((a, b) => (a.fechaAlta || a.fecha).localeCompare(b.fechaAlta || b.fecha));
             
             const unit = unidades.find(u => u.id === unitId);
             const rendimiento = unit?.rendimiento || 10.0;
@@ -1184,7 +1184,7 @@ export const Admin: React.FC = () => {
           }
           const unitLogs = kilometrajes
             .filter(k => k.unidadId === log.unidadId && k.kmValue !== undefined && k.kmValue !== null)
-            .sort((a, b) => a.fecha.localeCompare(b.fecha));
+            .sort((a, b) => (a.fechaAlta || a.fecha).localeCompare(b.fechaAlta || b.fecha));
           
           // Find index in sorted list
           const index = unitLogs.findIndex(k => k.id === log.id);
@@ -1506,7 +1506,7 @@ export const Admin: React.FC = () => {
                       <tbody className="divide-y divide-slate-850 text-xs text-slate-300">
                         {kilometrajes
                           .slice()
-                          .sort((a,b) => b.fecha.localeCompare(a.fecha))
+                          .sort((a,b) => (b.fechaAlta || b.fecha).localeCompare(a.fechaAlta || a.fecha))
                           .map(log => {
                             const unit = unidades.find(u => u.id === log.unidadId);
                             const statsDetails = getLogDistanceDetails(log);

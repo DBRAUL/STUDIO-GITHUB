@@ -46,6 +46,14 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
 
   const activeTaskList = obtenerTareasChofer(activeChofer);
 
+  const todayStr = getMexicoCityDateStr();
+  const existingLog = selectedUnidadId
+    ? (kilometrajes || []).find(
+        k => k.unidadId === selectedUnidadId && k.fecha === todayStr && k.kmValue !== undefined && k.kmValue !== null
+      )
+    : undefined;
+  const unidadAlreadyRegistered = !!existingLog;
+
   const runOdometerOcr = async (base64Str: string) => {
     setIsOcrProcessing(true);
     setOcrMileage('');
@@ -719,21 +727,36 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                 </select>
               </div>
 
-              {/* Manual Mileage input */}
-              <div className="space-y-1.5 text-left">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Kilometraje Actual de la Unidad <span className="text-amber-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="Ingrese kilómetros mostrados en el tablero"
-                    value={ocrMileage}
-                    onChange={(e) => setOcrMileage(e.target.value)}
-                    className="w-full bg-slate-950 text-slate-100 text-xs border border-slate-800 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono font-bold"
-                  />
+              {/* Manual Mileage input or Already Registered notice */}
+              {unidadAlreadyRegistered ? (
+                <div className="bg-slate-950 border border-emerald-900/30 p-3.5 rounded-xl text-left space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[10px] uppercase tracking-wider">
+                    <CheckCircle size={14} /> Unidad Registrada Hoy
+                  </div>
+                  <p className="text-[11px] text-slate-350 leading-relaxed">
+                    El kilometraje inicial de esta unidad ya fue registrado hoy por otro operador (<strong>{existingLog?.chofer}</strong>). No es necesario volver a ingresarlo.
+                  </p>
+                  <div className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-400">Lectura inicial:</span>
+                    <span className="text-emerald-400 font-bold">{existingLog?.kmValue?.toLocaleString()} km</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Kilometraje Actual de la Unidad <span className="text-amber-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      placeholder="Ingrese kilómetros mostrados en el tablero"
+                      value={ocrMileage}
+                      onChange={(e) => setOcrMileage(e.target.value)}
+                      className="w-full bg-slate-950 text-slate-100 text-xs border border-slate-800 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t border-slate-800 mt-6">
@@ -749,7 +772,7 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     });
                     return;
                   }
-                  if (!ocrMileage || Number(ocrMileage) <= 0) {
+                  if (!unidadAlreadyRegistered && (!ocrMileage || Number(ocrMileage) <= 0)) {
                     Swal.fire({
                       icon: 'warning',
                       title: 'Kilometraje Requerido',
@@ -760,8 +783,9 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     return;
                   }
                   setSavingMileage(true);
-                  const todayStr = getMexicoCityDateStr();
-                  const saved = await guardarKilometrajeHoy(activeChofer, todayStr, "", selectedUnidadId, Number(ocrMileage));
+                  const finalMileage = unidadAlreadyRegistered ? (existingLog?.kmValue || null) : Number(ocrMileage);
+                  
+                  const saved = await guardarKilometrajeHoy(activeChofer, todayStr, "", selectedUnidadId, finalMileage !== null ? finalMileage : undefined);
                   if (saved) {
                     const task = mileageTaskToStart;
                     setMileageTaskToStart(null);
@@ -782,9 +806,9 @@ export const Chofer: React.FC<{ lockedDriver?: string }> = ({ lockedDriver }) =>
                     });
                   }
                 }}
-                disabled={savingMileage || !selectedUnidadId || !ocrMileage}
+                disabled={savingMileage || !selectedUnidadId || (!unidadAlreadyRegistered && !ocrMileage)}
                 className={`w-full font-black py-3 rounded-lg text-xs uppercase tracking-widest transition cursor-pointer ${
-                  !selectedUnidadId || !ocrMileage || savingMileage
+                  !selectedUnidadId || (!unidadAlreadyRegistered && !ocrMileage) || savingMileage
                     ? 'bg-slate-850 border border-slate-800 text-slate-500 cursor-not-allowed'
                     : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow shadow-amber-950/20'
                 }`}
