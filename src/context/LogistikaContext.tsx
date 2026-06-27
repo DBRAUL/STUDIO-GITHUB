@@ -1039,13 +1039,15 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     getDoc(docRef).then(snap => {
       if (snap.exists()) {
         const item = snap.data();
+        const estStatus = p.estatus.toUpperCase();
         setDoc(docRef, {
           ...item,
           chofer: p.chofer,
           dateenv: p.fecha,
           estatus: p.estatus as any,
           orden: p.orden === '' ? null : p.orden,
-          obsLogistica: p.obs || item.obsLogistica || ''
+          obsLogistica: p.obs || item.obsLogistica || '',
+          fechaFinalizado: estStatus === 'FINALIZADO' ? (item.fechaFinalizado || getMexicoCityDateTimeStr()) : ''
         }).catch(e => handleFirestoreError(e, OperationType.WRITE, `pedidos/${p.id}`));
       }
     });
@@ -1057,6 +1059,7 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (snap.exists()) {
         const item = snap.data();
         const { latitude, longitude } = p.direccion ? mockGeocode(p.direccion) : { latitude: item.lat || 19.367508, longitude: item.lng || -99.284752 };
+        const estStatus = p.estatus.toUpperCase();
         setDoc(docRef, {
           ...item,
           chofer: p.chofer,
@@ -1065,7 +1068,8 @@ export const LogistikaProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           orden: p.orden === '' ? null : p.orden,
           direccion: p.direccion ? p.direccion.toUpperCase() : item.direccion,
           lat: p.direccion ? latitude : (item.lat || 19.367508),
-          lng: p.direccion ? longitude : (item.lng || -99.284752)
+          lng: p.direccion ? longitude : (item.lng || -99.284752),
+          fechaFinalizado: (estStatus === 'FINALIZADO' || estStatus === 'RECOLECTADO') ? (item.fechaFinalizado || getMexicoCityDateTimeStr()) : ''
         }).catch(e => handleFirestoreError(e, OperationType.WRITE, `recolecciones/${p.id}`));
       }
     });

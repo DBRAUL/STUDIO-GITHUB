@@ -1216,7 +1216,7 @@ export const Admin: React.FC = () => {
                   <Activity size={20} className="text-teal-400 animate-pulse" /> Auditoría de Unidades y Rendimiento
                 </h3>
                 <p className="text-slate-400 text-xs max-w-3xl leading-relaxed">
-                  Supervise y analice el kilometraje real de cada unidad mediante lecturas automáticas por Inteligencia Artificial (Gemini OCR). 
+                  Supervise y analice el kilometraje real de cada unidad ingresado directamente por los choferes. 
                   Compare los recorridos interdiarios, estime el gasto exacto de combustible y gestione la configuración de rendimiento de la flota en tiempo real.
                 </p>
               </div>
@@ -1487,9 +1487,9 @@ export const Admin: React.FC = () => {
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
                   <div className="border-b border-slate-800 pb-3">
                     <h4 className="font-extrabold text-slate-200 text-xs uppercase tracking-wider flex items-center gap-1.5 font-display text-indigo-400">
-                      <Camera size={14} /> Bitácora de Auditorías de Odómetro (IA Gemini)
+                      <Truck size={14} /> Bitácora de Lecturas de Odómetro y Kilometraje
                     </h4>
-                    <p className="text-slate-400 text-[10px] mt-0.5">Lista cronológica de fotos y kilometrajes validados interdiarios.</p>
+                    <p className="text-slate-400 text-[10px] mt-0.5">Lista cronológica de kilometrajes registrados interdiarios por unidad.</p>
                   </div>
 
                   <div className="overflow-x-auto">
