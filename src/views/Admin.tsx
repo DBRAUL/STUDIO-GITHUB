@@ -1798,18 +1798,18 @@ export const Admin: React.FC = () => {
               <button onClick={() => setSelectedHistItem(null)} className="text-slate-400 hover:text-slate-100"><X size={20} /></button>
             </div>
 
-            <div className="p-6 space-y-6 overflow-y-auto flex-grow text-xs text-slate-350">
+            <div className="p-6 space-y-6 overflow-y-auto flex-grow text-xs text-slate-300">
               {/* General Metadata Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 bg-slate-950/40 border border-slate-850 p-4 rounded-xl">
                 <div>
                   <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">Fecha Alta</span>
-                  <span className="text-xs text-slate-350 font-mono">{selectedHistItem.type === 'Entrega' ? (selectedHistItem.item.fecha || '—') : (selectedHistItem.item.fechaAlta || '—')}</span>
+                  <span className="text-xs text-slate-300 font-mono">{selectedHistItem.type === 'Entrega' ? (selectedHistItem.item.fecha || '—') : (selectedHistItem.item.fechaAlta || '—')}</span>
                 </div>
                 <div>
                   <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">
                     {selectedHistItem.type === 'Entrega' ? 'Fecha Entregado' : 'Fecha Recolectado'}
                   </span>
-                  <span className="text-xs text-slate-350 font-mono">
+                  <span className="text-xs text-slate-300 font-mono">
                     {formatedDisplayDateTime(selectedHistItem.item.fechaFinalizado) || selectedHistItem.item.fechaFinalizado || '—'}
                   </span>
                 </div>
@@ -1863,7 +1863,7 @@ export const Admin: React.FC = () => {
 
                   <div>
                     <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wide mb-1">Observaciones Ventas</span>
-                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-350 italic whitespace-pre-wrap break-words">{selectedHistItem.item.obs || '—'}</p>
+                    <p className="bg-slate-950 border border-slate-850 p-3 rounded-lg text-xs text-slate-300 italic whitespace-pre-wrap break-words">{selectedHistItem.item.obs || '—'}</p>
                   </div>
 
                   {(selectedHistItem.item.comprasObs || selectedHistItem.item.comprasUbic) && (
@@ -1951,6 +1951,7 @@ export const Admin: React.FC = () => {
                               imageUrl: selectedHistItem.item.fotoUrl,
                               imageAlt: 'Evidencia',
                               background: '#0d1b2a',
+                              color: '#fff',
                               confirmButtonColor: '#14b8a6',
                               confirmButtonText: 'Cerrar'
                             });
@@ -1973,6 +1974,7 @@ export const Admin: React.FC = () => {
                               imageUrl: img,
                               imageAlt: `Evidencia ${idx + 1}`,
                               background: '#0d1b2a',
+                              color: '#fff',
                               confirmButtonColor: '#14b8a6',
                               confirmButtonText: 'Cerrar'
                             });
