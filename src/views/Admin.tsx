@@ -827,7 +827,9 @@ export const Admin: React.FC = () => {
                       </div>
 
                       <div className="text-right text-[10px] text-slate-500 font-mono space-y-1">
-                        <p className="bg-slate-850 px-2 py-1 rounded inline-block text-slate-300 border border-slate-800">Archivado: {h.fechaArchivado}</p>
+                        <p className="bg-slate-850 px-2 py-1 rounded inline-block text-slate-300 border border-slate-800">
+                          Entregado: {formatedDisplayDateTime(h.fechaFinalizado) || h.fechaFinalizado || '—'}
+                        </p>
                         <p className="block">Chofer finalizador: {h.chofer} · Receptor: {h.receptor || '—'}</p>
                       </div>
                     </div>
@@ -852,7 +854,9 @@ export const Admin: React.FC = () => {
                       </div>
 
                       <div className="text-right text-[10px] text-slate-500 font-mono space-y-1">
-                        <p className="bg-slate-850 px-2 py-1 rounded inline-block text-slate-300 border border-slate-800">Archivado: {h.fechaArchivado}</p>
+                        <p className="bg-slate-850 px-2 py-1 rounded inline-block text-slate-300 border border-slate-800">
+                          Recolectado: {formatedDisplayDateTime(h.fechaFinalizado) || h.fechaFinalizado || '—'}
+                        </p>
                         <p className="block">Chofer finalizador: {h.chofer}</p>
                       </div>
                     </div>
@@ -1799,8 +1803,12 @@ export const Admin: React.FC = () => {
                   <span className="text-xs text-slate-350 font-mono">{selectedHistItem.type === 'Entrega' ? (selectedHistItem.item.fecha || '—') : (selectedHistItem.item.fechaAlta || '—')}</span>
                 </div>
                 <div>
-                  <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">Fecha Archivado</span>
-                  <span className="text-xs text-slate-350 font-mono">{selectedHistItem.item.fechaArchivado || '—'}</span>
+                  <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">
+                    {selectedHistItem.type === 'Entrega' ? 'Fecha Entregado' : 'Fecha Recolectado'}
+                  </span>
+                  <span className="text-xs text-slate-350 font-mono">
+                    {formatedDisplayDateTime(selectedHistItem.item.fechaFinalizado) || selectedHistItem.item.fechaFinalizado || '—'}
+                  </span>
                 </div>
                 <div>
                   <span className="block text-[9px] uppercase font-bold text-slate-500 tracking-wider">Chofer Finalizador</span>
