@@ -191,7 +191,8 @@ export const Compras: React.FC = () => {
 
   const handleOpenDictamen = (p: Pedido) => {
     setSelectedPedido(p);
-    setDictamenEst(p.estatus);
+    const validStatuses = ["EN PROCESO / COMPRA", "ENTREGA INMEDIATA"];
+    setDictamenEst(validStatuses.includes(p.estatus) ? p.estatus : "EN PROCESO / COMPRA");
     setDictamenObs(p.comprasObs || '');
     setDictamenUbic(p.comprasUbic || '');
     setDictamenOpen(true);
@@ -634,10 +635,7 @@ export const Compras: React.FC = () => {
                   required
                   className="w-full bg-slate-900 border border-slate-750 text-slate-100 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 font-semibold"
                 >
-                  <option value="CARGADO">CARGADO</option>
-                  <option value="PENDIENTE">PENDIENTE</option>
                   <option value="EN PROCESO / COMPRA">EN PROCESO / COMPRA</option>
-                  <option value="PARCIAL">PARCIAL</option>
                   <option value="ENTREGA INMEDIATA">ENTREGA INMEDIATA</option>
                 </select>
               </div>
