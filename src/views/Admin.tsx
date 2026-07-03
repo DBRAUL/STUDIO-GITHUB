@@ -8,6 +8,7 @@ import { useLogistika, formatedDisplayDate, formatedDisplayDateTime, getMexicoCi
 import { Pedido, Recoleccion, UnidadConfig, KilometrajeRegistro } from '../types';
 import { Shield, Search, Trash2, Edit2, Archive, AlertTriangle, X, CheckSquare, Plus, Activity, RotateCcw, MapPin, Calendar, Database, FileJson, Save, FileUp, FileDown, Eye, Camera, FileText, CheckCircle2, DollarSign, Fuel, ArrowRight, Truck } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { createPortal } from 'react-dom';
 
 export const Admin: React.FC = () => {
   const {
@@ -1619,10 +1620,10 @@ export const Admin: React.FC = () => {
       })()}
 
       {/* EDIT MODAL PEDIDOS */}
-      {pedModalOpen && editingPedido && (
+      {pedModalOpen && editingPedido && createPortal(
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setPedModalOpen(false); }}
-          className="fixed inset-0 z-50 flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-[100] flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
@@ -1708,14 +1709,15 @@ export const Admin: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* EDIT MODAL RECOLECCION */}
-      {recModalOpen && editingRec && (
+      {recModalOpen && editingRec && createPortal(
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setRecModalOpen(false); }}
-          className="fixed inset-0 z-50 flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-[100] flex justify-center items-start bg-black/65 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-850 shrink-0">
@@ -1773,14 +1775,15 @@ export const Admin: React.FC = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* HISTORIAL DETAIL EYE MODAL */}
-      {selectedHistItem && (
+      {selectedHistItem && createPortal(
         <div 
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedHistItem(null); }}
-          className="fixed inset-0 z-50 flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
+          className="fixed inset-0 z-[100] flex justify-center items-start bg-black/70 backdrop-blur-sm p-4 overflow-y-auto cursor-pointer"
         >
           <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl my-8 cursor-default overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center p-5 border-b border-slate-800 shrink-0">
@@ -1996,7 +1999,8 @@ export const Admin: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
